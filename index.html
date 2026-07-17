@@ -8,6 +8,7 @@
   <style>
     :root { --navy:#12263a; --blue:#1769aa; --blue2:#e8f4fc; --green:#218653; --green2:#e9f7ef; --red:#bd3c43; --gold:#f4b942; --ink:#203447; --muted:#62778a; --line:#d6e1e9; --paper:#fff; --bg:#f3f7fa; --shadow:0 12px 35px rgba(18,38,58,.12); --sticky:188px; }
     * { box-sizing:border-box; }
+    [hidden] { display:none!important; }
     html { scroll-behavior:smooth; }
     body { margin:0; color:var(--ink); background:var(--bg); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.45; }
     button,input,select { font:inherit; }
@@ -160,12 +161,12 @@
   <main>
     <div class="app-shell">
       <section class="toolbar no-print" aria-label="Lineup actions">
-        <div class="actions"><button class="btn btn-secondary" id="saveBtn">Save</button><button class="btn btn-ghost" id="loadBtn">Load</button><button class="btn btn-primary" id="printBtn">Print / PDF</button><button class="btn btn-danger" id="clearBtn">Clear Lineup</button></div>
+        <div class="actions"><button class="btn btn-secondary" id="saveBtn">Save</button><button class="btn btn-ghost" id="loadBtn">Load</button><button class="btn btn-primary" id="printBtn">Print / PDF</button></div>
       </section>
       <div class="content">
         <div class="print-header"><h2 id="printTitle">Kickball Lineup</h2><span id="printMeta"></span></div>
         <section class="section-card no-print">
-          <div class="section-head"><div><h2 class="section-title">Team Rosters</h2><div class="section-note" id="teamRosterNote">Each alphabetical roster belongs to a team and is saved automatically on this device.</div></div><div class="team-controls" id="teamControls"><div class="field" id="teamSelectField"><label for="teamSelect">Current team</label><select id="teamSelect"></select></div><div class="field" id="teamNameField" hidden><label for="teamNameEdit">Team name</label><input id="teamNameEdit" autocomplete="off"></div><button class="btn btn-secondary" id="editTeamBtn">Edit Team</button><button class="btn btn-secondary team-edit-control" id="newTeamBtn" hidden>+ New Team</button><button class="btn btn-danger team-edit-control" id="deleteTeamBtn" hidden>Delete Team</button></div></div>
+          <div class="section-head"><div><h2 class="section-title">Team Rosters</h2><div class="section-note" id="teamRosterNote">Each alphabetical roster belongs to a team and is saved automatically on this device.</div></div><div class="team-controls" id="teamControls"><div class="field" id="teamSelectField"><label for="teamSelect">Current team</label><select id="teamSelect"></select></div><div class="field" id="teamNameField" hidden><label for="teamNameEdit">Team name</label><input id="teamNameEdit" autocomplete="off"></div><button class="btn btn-secondary" id="editTeamBtn">Edit Team</button><button class="btn btn-secondary" id="newTeamBtn">+ Add Team</button><button class="btn btn-danger team-edit-control" id="deleteTeamBtn" hidden>Delete Team</button></div></div>
           <div class="roster-builder">
             <form class="roster-form" id="rosterForm">
               <div class="field"><label for="rosterName">Player name</label><input id="rosterName" required placeholder="Player name" autocomplete="off"></div>
@@ -183,7 +184,7 @@
           <div class="section-head"><div><h2 class="section-title">Kicking Order & Fielding by Inning</h2><div class="section-note">Create separate lineups for doubleheaders. Roster player names stay linked and cannot be edited here.</div></div><div class="lineup-controls no-print"><div class="field"><label for="lineupSelect">Game</label><select id="lineupSelect"></select></div><div class="field"><label for="gameDate">Game date</label><input id="gameDate" type="date"></div><div class="field small"><label for="innings">Innings</label><input id="innings" type="number" min="1" max="30" value="9"></div><button class="btn btn-secondary" id="addLineupBtn">+ Add Game</button><button class="btn btn-danger" id="deleteLineupBtn">Delete</button></div></div>
           <div class="kicking-progress no-print" id="evenProgress" hidden></div>
           <div class="table-wrap"><table aria-label="Kickball lineup"><thead id="lineupHead"></thead><tbody id="lineupBody"></tbody></table></div>
-          <div class="lineup-lock no-print"><button class="btn btn-primary" id="lockLineupBtn">Lock Lineup</button><button class="btn btn-secondary" id="autoDefenseBtn">Autogenerate Defense</button></div>
+          <div class="lineup-lock no-print"><button class="btn btn-primary" id="lockLineupBtn">Lock Lineup</button><button class="btn btn-secondary" id="autoDefenseBtn">Autogenerate Defense</button><button class="btn btn-danger" id="clearBtn">Clear Lineup</button></div>
         </section>
         <section class="section-card no-print"><div class="section-head"><div><h2 class="section-title">Lineup Backup</h2><div class="section-note">Download your lineup or transfer it to another device.</div></div><div class="actions"><button class="btn btn-secondary" id="exportBtn">Export JSON</button><label class="btn btn-ghost" for="importFile" style="text-transform:none;letter-spacing:0;font-size:inherit">Import JSON</label><input id="importFile" type="file" accept="application/json,.json" hidden></div></div></section>
       </div>
@@ -301,7 +302,8 @@
       const summary=refs.rosterList.querySelectorAll(".position-picker summary")[index],count=member.eligiblePositions.length;
       if(summary)summary.textContent=count?`${count} playable position${count===1?"":"s"}`:"Choose playable positions";
     }
-    function addTeam(){if(!editingTeam)return;const t=normalizeTeam({name:"New Team"});state.teams.push(t);state.activeTeamId=t.id;saveData();render();refs.teamNameEdit.select();showToast("New Team roster created.");}
+    function nextTeamName(){let number=1,name="New Team";const names=new Set(state.teams.map(t=>t.name.toLocaleLowerCase()));while(names.has(name.toLocaleLowerCase()))name=`New Team ${++number}`;return name;}
+    function addTeam(){const name=nextTeamName(),t=normalizeTeam({name});state.teams.push(t);state.activeTeamId=t.id;editingTeam=false;saveData();render();showToast(`${name} roster created.`);}
     function deleteTeam(){const t=team();if(!editingTeam||!confirm(`Delete ${t.name} and all of its lineups?`))return;state.teams=state.teams.filter(x=>x.id!==t.id);if(!state.teams.length)state.teams.push(normalizeTeam({name:"New Team"}));state.activeTeamId=state.teams[0].id;saveData();render();}
     function addLineup(){const t=team(),previous=game(),l=newLineup(t.lineups.length+1);l.innings=previous.innings;l.players=previous.players.map(p=>normalizePlayer({rosterId:p.rosterId,name:p.name,gender:p.gender,isSub:p.isSub,eligiblePositions:p.eligiblePositions},l.innings));t.lineups.push(l);t.activeLineupId=l.id;saveData();render();showToast(`${l.name} created with the previous kicking order.`);}
     function deleteLineup(){const t=team(),g=game();if(t.lineups.length===1||!confirm(`Delete ${g.name}?`))return;t.lineups=t.lineups.filter(x=>x.id!==g.id);t.activeLineupId=t.lineups[0].id;saveData();render();}
