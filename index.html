@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Free baseball and softball lineup card generator with unlimited players, inning-by-inning positions, and a Rover position." />
+  <title>Baseball Lineup Generator</title>
+  <style>
+    :root {
+      --navy: #102a43;
+      --blue: #1769aa;
+      --blue-dark: #0f4f87;
+      --sky: #eaf4fb;
+      --green: #2d8a4e;
+      --red: #ba3a3a;
+      --gold: #f2b84b;
+      --ink: #243b53;
+      --muted: #627d98;
+      --line: #d7e2ea;
+      --paper: #ffffff;
+      --bg: #f4f7fa;
+      --shadow: 0 10px 30px rgba(16, 42, 67, .10);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .site-header {
+      background: linear-gradient(135deg, #0e2b45 0%, #1769aa 65%, #2387c8 100%);
+      color: white;
+      padding: 22px 20px 76px;
+      position: relative;
+      overflow: hidden;
+    }
+    .site-header::after {
+      content: "";
+      position: absolute;
+      width: 380px;
+      height: 380px;
+      border: 70px solid rgba(255,255,255,.06);
+      border-radius: 50%;
+      right: -150px;
+      top: -190px;
+    }
+    .header-inner { max-width: 1180px; margin: auto; position: relative; z-index: 1; }
+    .brand { font-weight: 800; letter-spacing: .02em; font-size: 1rem; opacity: .95; }
+    h1 { margin: 32px 0 10px; font-size: clamp(2rem, 5vw, 3.6rem); line-height: 1.05; }
+    .lead { max-width: 760px; margin: 0; color: #d9ecfa; font-size: 1.08rem; }
+
+    main { max-width: 1180px; margin: -48px auto 70px; padding: 0 20px; position: relative; z-index: 2; }
+    .app-shell {
+      background: var(--paper);
+      border: 1px solid rgba(215,226,234,.85);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: 12px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfdff;
+    }
+    .field { display: grid; gap: 6px; min-width: 150px; flex: 1; }
+    .field.small { flex: 0 0 105px; min-width: 105px; }
+    label { color: var(--navy); font-size: .8rem; font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }
+    input, select {
+      width: 100%;
+      border: 1px solid #b8c9d8;
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: white;
+      color: var(--ink);
+      outline: none;
+      transition: border .15s, box-shadow .15s;
+    }
+    input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(23,105,170,.13); }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+    .btn {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 750;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 42px;
+    }
+    .btn-primary { background: var(--blue); color: white; }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn-secondary { background: #e8f0f6; color: var(--navy); }
+    .btn-secondary:hover { background: #dce9f2; }
+    .btn-danger { background: #fff0f0; color: var(--red); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+
+    .content { padding: 20px; display: grid; gap: 20px; }
+    .section-card { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+    .section-head {
+      padding: 15px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--sky);
+      border-bottom: 1px solid var(--line);
+    }
+    .section-title { margin: 0; color: var(--navy); font-size: 1.1rem; }
+    .section-note { color: var(--muted); font-size: .88rem; }
+
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; min-width: 780px; }
+    th, td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 8px; text-align: left; }
+    th:last-child, td:last-child { border-right: 0; }
+    tr:last-child td { border-bottom: 0; }
+    th {
+      background: #f8fafc;
+      color: var(--navy);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .045em;
+      white-space: nowrap;
+    }
+    td.order-cell { width: 70px; text-align: center; font-weight: 800; color: var(--blue); }
+    td.player-cell { min-width: 190px; }
+    td.number-cell { width: 90px; }
+    td.position-cell { min-width: 112px; }
+    td.controls-cell { width: 126px; white-space: nowrap; }
+    td input, td select { padding: 8px 9px; border-radius: 6px; }
+    .icon-btn {
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--navy);
+      width: 31px;
+      height: 31px;
+      border-radius: 6px;
+      padding: 0;
+      font-weight: 900;
+    }
+    .icon-btn:hover { background: var(--sky); }
+    .icon-btn.delete { color: var(--red); }
+
+    .warning-bar {
+      display: none;
+      margin: 0 16px 16px;
+      padding: 10px 12px;
+      border: 1px solid #f3cf82;
+      background: #fff8e7;
+      color: #78520e;
+      border-radius: 8px;
+      font-size: .88rem;
+    }
+    .warning-bar.show { display: block; }
+
+    .empty-state { padding: 28px; text-align: center; color: var(--muted); }
+
+    .print-header { display: none; }
+    .footer-note { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 18px; }
+
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: var(--navy);
+      color: white;
+      padding: 11px 14px;
+      border-radius: 9px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: .2s;
+      z-index: 20;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 760px) {
+      .site-header { padding-bottom: 64px; }
+      main { padding: 0 10px; }
+      .toolbar, .content { padding: 12px; }
+      .actions { width: 100%; margin-left: 0; }
+      .actions .btn { flex: 1; }
+      .field, .field.small { min-width: calc(50% - 6px); flex: 1 1 calc(50% - 6px); }
+    }
+
+    @media print {
+      @page { size: landscape; margin: .35in; }
+      body { background: white; color: black; font-size: 9pt; }
+      .site-header, .toolbar, .no-print, .footer-note, .toast { display: none !important; }
+      main { max-width: none; margin: 0; padding: 0; }
+      .app-shell { box-shadow: none; border: 0; border-radius: 0; }
+      .content { padding: 0; gap: 12px; }
+      .print-header { display: block; margin-bottom: 10px; }
+      .print-header h2 { margin: 0 0 4px; font-size: 17pt; }
+      .print-meta { display: flex; gap: 24px; font-size: 10pt; }
+      .section-card { break-inside: avoid; border-color: #777; }
+      .section-head { padding: 6px 8px; background: #eee !important; border-color: #777; }
+      .section-note, .section-head .btn { display: none !important; }
+      th, td { padding: 4px; border-color: #999; }
+      th { background: #eee !important; color: black; }
+      td input, td select {
+        appearance: none;
+        border: 0;
+        padding: 0;
+        color: black;
+        background: transparent;
+        box-shadow: none;
+      }
+      td.controls-cell { display: none; }
+      th.controls-heading { display: none; }
+      table { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">COACH'S LINEUP TOOLS</div>
+      <h1>Baseball Lineup Generator</h1>
+      <p class="lead">Build a batting order, assign defensive positions for every inning, and print a clean lineup card for your dugout.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="app-shell">
+      <section class="toolbar no-print" aria-label="Lineup settings">
+        <div class="field">
+          <label for="teamName">Team name</label>
+          <input id="teamName" type="text" placeholder="Home Team" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="opponent">Opponent</label>
+          <input id="opponent" type="text" placeholder="Opponent" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="gameDate">Game date</label>
+          <input id="gameDate" type="date" />
+        </div>
+        <div class="field small">
+          <label for="innings">Innings</label>
+          <input id="innings" type="number" min="1" max="30" value="7" />
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary" id="saveBtn" type="button">Save</button>
+          <button class="btn btn-ghost" id="loadBtn" type="button">Load</button>
+          <button class="btn btn-primary" id="printBtn" type="button">Print / PDF</button>
+          <button class="btn btn-danger" id="clearBtn" type="button">Clear</button>
+        </div>
+      </section>
+
+      <div class="content">
+        <div class="print-header">
+          <h2 id="printTitle">Baseball Lineup</h2>
+          <div class="print-meta"><span id="printOpponent"></span><span id="printDate"></span></div>
+        </div>
+
+        <section class="section-card">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Batting Order & Defensive Positions</h2>
+              <div class="section-note">Add as many players as needed. Use the arrows to change batting order.</div>
+            </div>
+            <button class="btn btn-primary no-print" id="addPlayerBtn" type="button">+ Add Player</button>
+          </div>
+          <div class="table-wrap">
+            <table aria-label="Baseball lineup">
+              <thead id="lineupHead"></thead>
+              <tbody id="lineupBody"></tbody>
+            </table>
+          </div>
+          <div class="warning-bar" id="duplicateWarning"></div>
+        </section>
+
+        <section class="section-card no-print">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Lineup Data</h2>
+              <div class="section-note">Download a backup or transfer the lineup to another device.</div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-secondary" id="exportBtn" type="button">Export JSON</button>
+              <label class="btn btn-ghost" for="importFile" style="text-transform:none;letter-spacing:0;font-size:inherit;">Import JSON</label>
+              <input id="importFile" type="file" accept="application/json,.json" hidden />
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <p class="footer-note">Your lineup stays in your browser unless you export it.</p>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const POSITIONS = [
+      "", "P", "C", "1B", "2B", "3B", "SS", "LF", "LCF", "CF", "RCF", "RF", "Rover", "EH", "Bench"
+    ];
+
+    const state = {
+      innings: 7,
+      players: []
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const refs = {
+      teamName: $("teamName"), opponent: $("opponent"), gameDate: $("gameDate"), innings: $("innings"),
+      lineupHead: $("lineupHead"), lineupBody: $("lineupBody"), warning: $("duplicateWarning"), toast: $("toast")
+    };
+
+    function uid() {
+      return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+
+    function blankPlayer() {
+      return { id: uid(), name: "", number: "", positions: Array(state.innings).fill("") };
+    }
+
+    function normalizePlayer(player) {
+      const positions = Array.isArray(player.positions) ? player.positions.slice(0, state.innings) : [];
+      while (positions.length < state.innings) positions.push("");
+      return {
+        id: player.id || uid(),
+        name: String(player.name || ""),
+        number: String(player.number || ""),
+        positions
+      };
+    }
+
+    function addPlayer(player = blankPlayer()) {
+      state.players.push(normalizePlayer(player));
+      render();
+      const lastName = refs.lineupBody.querySelector("tr:last-child input[data-field='name']");
+      if (lastName) lastName.focus();
+    }
+
+    function movePlayer(index, direction) {
+      const target = index + direction;
+      if (target < 0 || target >= state.players.length) return;
+      [state.players[index], state.players[target]] = [state.players[target], state.players[index]];
+      render();
+    }
+
+    function removePlayer(index) {
+      state.players.splice(index, 1);
+      render();
+    }
+
+    function setInnings(value) {
+      const next = Math.max(1, Math.min(30, Number(value) || 1));
+      state.innings = next;
+      refs.innings.value = next;
+      state.players = state.players.map(normalizePlayer);
+      render();
+    }
+
+    function optionsHtml(selected) {
+      return POSITIONS.map(pos => `<option value="${pos}" ${pos === selected ? "selected" : ""}>${pos || "—"}</option>`).join("");
+    }
+
+    function render() {
+      refs.lineupHead.innerHTML = `
+        <tr>
+          <th>Order</th>
+          <th>Player</th>
+          <th>#</th>
+          ${Array.from({length: state.innings}, (_, i) => `<th>Inn ${i + 1}</th>`).join("")}
+          <th class="controls-heading no-print">Actions</th>
+        </tr>`;
+
+      if (!state.players.length) {
+        refs.lineupBody.innerHTML = `<tr><td colspan="${state.innings + 4}" class="empty-state">No players yet. Select “Add Player” to begin.</td></tr>`;
+        checkDuplicates();
+        return;
+      }
+
+      refs.lineupBody.innerHTML = state.players.map((player, index) => `
+        <tr data-id="${player.id}">
+          <td class="order-cell">${index + 1}</td>
+          <td class="player-cell"><input type="text" value="${escapeHtml(player.name)}" data-index="${index}" data-field="name" aria-label="Player ${index + 1} name" placeholder="Player name" /></td>
+          <td class="number-cell"><input type="text" value="${escapeHtml(player.number)}" data-index="${index}" data-field="number" aria-label="Player ${index + 1} number" placeholder="#" /></td>
+          ${player.positions.map((position, inning) => `
+            <td class="position-cell"><select data-index="${index}" data-inning="${inning}" aria-label="Player ${index + 1}, inning ${inning + 1} position">${optionsHtml(position)}</select></td>
+          `).join("")}
+          <td class="controls-cell no-print">
+            <button class="icon-btn" type="button" data-action="up" data-index="${index}" title="Move up" aria-label="Move player up">↑</button>
+            <button class="icon-btn" type="button" data-action="down" data-index="${index}" title="Move down" aria-label="Move player down">↓</button>
+            <button class="icon-btn delete" type="button" data-action="delete" data-index="${index}" title="Remove player" aria-label="Remove player">×</button>
+          </td>
+        </tr>
+      `).join("");
+      checkDuplicates();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function checkDuplicates() {
+      const duplicateMessages = [];
+      for (let inning = 0; inning < state.innings; inning++) {
+        const counts = new Map();
+        state.players.forEach(p => {
+          const pos = p.positions[inning];
+          if (!pos || pos === "Bench" || pos === "EH") return;
+          counts.set(pos, (counts.get(pos) || 0) + 1);
+        });
+        const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([pos]) => pos);
+        if (duplicates.length) duplicateMessages.push(`Inning ${inning + 1}: ${duplicates.join(", ")}`);
+      }
+      if (duplicateMessages.length) {
+        refs.warning.textContent = `Duplicate fielding positions found — ${duplicateMessages.join(" • ")}`;
+        refs.warning.classList.add("show");
+      } else {
+        refs.warning.classList.remove("show");
+        refs.warning.textContent = "";
+      }
+    }
+
+    function getPayload() {
+      return {
+        version: 1,
+        teamName: refs.teamName.value,
+        opponent: refs.opponent.value,
+        gameDate: refs.gameDate.value,
+        innings: state.innings,
+        players: state.players
+      };
+    }
+
+    function applyPayload(data) {
+      state.innings = Math.max(1, Math.min(30, Number(data.innings) || 7));
+      refs.innings.value = state.innings;
+      refs.teamName.value = data.teamName || "";
+      refs.opponent.value = data.opponent || "";
+      refs.gameDate.value = data.gameDate || "";
+      state.players = Array.isArray(data.players) ? data.players.map(normalizePlayer) : [];
+      render();
+    }
+
+    function saveLocal() {
+      localStorage.setItem("baseballLineupGenerator", JSON.stringify(getPayload()));
+      showToast("Lineup saved on this device.");
+    }
+
+    function loadLocal() {
+      const saved = localStorage.getItem("baseballLineupGenerator");
+      if (!saved) return showToast("No saved lineup found.");
+      try {
+        applyPayload(JSON.parse(saved));
+        showToast("Saved lineup loaded.");
+      } catch {
+        showToast("The saved lineup could not be read.");
+      }
+    }
+
+    function clearAll() {
+      if (!confirm("Clear the entire lineup?")) return;
+      refs.teamName.value = "";
+      refs.opponent.value = "";
+      refs.gameDate.value = "";
+      state.innings = 7;
+      refs.innings.value = 7;
+      state.players = [];
+      render();
+    }
+
+    function exportJson() {
+      const blob = new Blob([JSON.stringify(getPayload(), null, 2)], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const team = (refs.teamName.value || "baseball-lineup").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+      a.href = url;
+      a.download = `${team || "baseball-lineup"}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importJson(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          applyPayload(JSON.parse(reader.result));
+          showToast("Lineup imported.");
+        } catch {
+          showToast("That file is not a valid lineup backup.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function preparePrint() {
+      $("printTitle").textContent = refs.teamName.value ? `${refs.teamName.value} Lineup` : "Baseball Lineup";
+      $("printOpponent").textContent = refs.opponent.value ? `Opponent: ${refs.opponent.value}` : "";
+      $("printDate").textContent = refs.gameDate.value ? `Date: ${new Date(refs.gameDate.value + "T12:00:00").toLocaleDateString()}` : "";
+      window.print();
+    }
+
+    let toastTimer;
+    function showToast(message) {
+      refs.toast.textContent = message;
+      refs.toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => refs.toast.classList.remove("show"), 2300);
+    }
+
+    refs.lineupBody.addEventListener("input", (event) => {
+      const input = event.target.closest("input[data-field]");
+      if (!input) return;
+      state.players[Number(input.dataset.index)][input.dataset.field] = input.value;
+    });
+
+    refs.lineupBody.addEventListener("change", (event) => {
+      const select = event.target.closest("select[data-inning]");
+      if (!select) return;
+      state.players[Number(select.dataset.index)].positions[Number(select.dataset.inning)] = select.value;
+      checkDuplicates();
+    });
+
+    refs.lineupBody.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const index = Number(button.dataset.index);
+      if (button.dataset.action === "up") movePlayer(index, -1);
+      if (button.dataset.action === "down") movePlayer(index, 1);
+      if (button.dataset.action === "delete") removePlayer(index);
+    });
+
+    $("addPlayerBtn").addEventListener("click", () => addPlayer());
+    refs.innings.addEventListener("change", e => setInnings(e.target.value));
+    $("saveBtn").addEventListener("click", saveLocal);
+    $("loadBtn").addEventListener("click", loadLocal);
+    $("printBtn").addEventListener("click", preparePrint);
+    $("clearBtn").addEventListener("click", clearAll);
+    $("exportBtn").addEventListener("click", exportJson);
+    $("importFile").addEventListener("change", e => { importJson(e.target.files[0]); e.target.value = ""; });
+
+    // Start with nine editable rows while still allowing any number of players.
+    state.players = Array.from({length: 9}, blankPlayer);
+    refs.gameDate.value = new Date().toISOString().slice(0, 10);
+    render();
+  </script>
+</body>
+</html>
