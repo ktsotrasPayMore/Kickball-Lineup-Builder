@@ -28,6 +28,11 @@
     input:focus,select:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(23,105,170,.13); }
     .actions { display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
     .sub-actions select { width:auto; }
+    .team-controls,.lineup-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:end; }
+    .team-controls .field { min-width:180px; }
+    .team-controls select,.lineup-controls select { min-width:180px; }
+    .attached-team { display:flex; align-items:center; gap:8px; color:var(--navy); font-weight:800; }
+    .attached-team::before { content:"Team"; padding:3px 7px; border-radius:6px; background:var(--blue); color:#fff; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; }
     .btn { border:0; border-radius:9px; padding:10px 14px; min-height:42px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
     .btn-primary { background:var(--blue); color:#fff; }
     .btn-secondary { background:#e7f0f6; color:var(--navy); }
@@ -117,6 +122,8 @@
       .roster-player .icon-btn.add { grid-column:2; grid-row:2; justify-self:start; }
       .roster-player .icon-btn.delete { grid-column:3; grid-row:2; }
       .split-lineups-grid { grid-template-columns:1fr; }
+      .team-controls,.lineup-controls { width:100%; }
+      .team-controls .field,.team-controls select,.lineup-controls select { width:100%; }
       .section-head { padding:12px; }
       .section-head>.btn { width:100%; }
       .player-wrap { gap:4px; }
@@ -146,16 +153,16 @@
   <main>
     <div class="app-shell">
       <section class="toolbar no-print" aria-label="Game settings">
-        <div class="field"><label for="teamName">Team name</label><input id="teamName" placeholder="Home Team" autocomplete="off"></div>
+        <div class="field"><label for="teamName">Team</label><input id="teamName" readonly aria-describedby="teamRosterNote"></div>
         <div class="field"><label for="opponent">Opponent</label><input id="opponent" placeholder="Opponent" autocomplete="off"></div>
         <div class="field"><label for="gameDate">Game date</label><input id="gameDate" type="date"></div>
         <div class="field small"><label for="innings">Innings</label><input id="innings" type="number" min="1" max="30" value="9"></div>
-        <div class="actions"><button class="btn btn-secondary" id="saveBtn">Save</button><button class="btn btn-ghost" id="loadBtn">Load</button><button class="btn btn-primary" id="printBtn">Print / PDF</button><button class="btn btn-danger" id="clearBtn">Clear</button></div>
+        <div class="actions"><button class="btn btn-secondary" id="saveBtn">Save</button><button class="btn btn-ghost" id="loadBtn">Load</button><button class="btn btn-primary" id="printBtn">Print / PDF</button><button class="btn btn-danger" id="clearBtn">Clear Lineup</button></div>
       </section>
       <div class="content">
         <div class="print-header"><h2 id="printTitle">Kickball Lineup</h2><span id="printMeta"></span></div>
         <section class="section-card no-print">
-          <div class="section-head"><div><h2 class="section-title">Team Roster</h2><div class="section-note">Saved automatically on this device. Add players from your roster to any game.</div></div></div>
+          <div class="section-head"><div><h2 class="section-title">Team Rosters</h2><div class="section-note" id="teamRosterNote">Each alphabetical roster belongs to a team and is saved automatically on this device.</div></div><div class="team-controls"><div class="field"><label for="teamSelect">Current team</label><select id="teamSelect"></select></div><button class="btn btn-secondary" id="newTeamBtn">+ New Team</button><button class="btn btn-danger" id="deleteTeamBtn">Delete Team</button></div></div>
           <div class="roster-builder">
             <form class="roster-form" id="rosterForm">
               <div class="field"><label for="rosterName">Player name</label><input id="rosterName" required placeholder="Player name" autocomplete="off"></div>
@@ -170,7 +177,7 @@
           </div>
         </section>
         <section class="section-card">
-          <div class="section-head"><div><h2 class="section-title">Kicking Order & Fielding by Inning</h2><div class="section-note">The player column stays visible while you scroll. A field position can only be used once per inning.</div></div></div>
+          <div class="section-head"><div><h2 class="section-title">Kicking Order & Fielding by Inning</h2><div class="section-note">Create separate lineups for doubleheaders. Roster player names stay linked and cannot be edited here.</div></div><div class="lineup-controls no-print"><select id="lineupSelect" aria-label="Current lineup"></select><button class="btn btn-secondary" id="addLineupBtn">+ Add Lineup</button><button class="btn btn-danger" id="deleteLineupBtn">Delete</button></div></div>
           <div class="kicking-progress no-print" id="evenProgress" hidden></div>
           <div class="table-wrap"><table aria-label="Kickball lineup"><thead id="lineupHead"></thead><tbody id="lineupBody"></tbody></table></div>
           <div class="lineup-lock no-print"><button class="btn btn-primary" id="lockLineupBtn">Lock Lineup</button></div>
@@ -184,72 +191,61 @@
   <script>
     const POSITIONS = ["", "P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "Rover", "Bench"];
     const GENDERS = ["Female", "Male"];
-    const state = { innings:9, currentInning:1, players:[], roster:[], lastKicker:{Female:null,Male:null}, lastGender:null, lineupLocked:false };
-    const $ = id => document.getElementById(id);
-    const refs = { teamName:$("teamName"), opponent:$("opponent"), gameDate:$("gameDate"), innings:$("innings"), head:$("lineupHead"), body:$("lineupBody"), rosterList:$("rosterList"), rosterName:$("rosterName"), rosterGender:$("rosterGender"), subGender:$("subGender"), evenProgress:$("evenProgress"), lockLineupBtn:$("lockLineupBtn"), toast:$("toast") };
     const uid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2);
-    const blankPlayer = gender => ({ id:uid(), name:"", gender:gender || (state.players.length%2 ? "Male" : "Female"), isSub:true, positions:Array(state.innings).fill("") });
-    function normalizePlayer(p) { const positions=Array.isArray(p.positions)?p.positions.slice(0,state.innings):[]; while(positions.length<state.innings) positions.push(""); return {id:p.id||uid(),rosterId:p.rosterId||null,name:String(p.name||""),gender:GENDERS.includes(p.gender)?p.gender:"Female",isSub:Boolean(p.isSub),positions}; }
+    const today = () => new Date().toISOString().slice(0,10);
+    const newLineup = number => ({id:uid(),name:`Game ${number}`,opponent:"",gameDate:today(),innings:9,currentInning:1,players:[],lastKicker:{Female:null,Male:null},lastGender:null,lineupLocked:false});
+    const newTeam = name => ({id:uid(),name,roster:[],lineups:[newLineup(1)],activeLineupId:null});
+    const state = { teams:[], activeTeamId:null };
+    const $ = id => document.getElementById(id);
+    const refs = { teamName:$("teamName"),teamSelect:$("teamSelect"),lineupSelect:$("lineupSelect"),opponent:$("opponent"),gameDate:$("gameDate"),innings:$("innings"),head:$("lineupHead"),body:$("lineupBody"),rosterList:$("rosterList"),rosterName:$("rosterName"),rosterGender:$("rosterGender"),subGender:$("subGender"),evenProgress:$("evenProgress"),lockLineupBtn:$("lockLineupBtn"),toast:$("toast") };
+    const team = () => state.teams.find(t=>t.id===state.activeTeamId) || state.teams[0];
+    const game = () => { const t=team(); return t.lineups.find(l=>l.id===t.activeLineupId) || t.lineups[0]; };
     const esc = value => String(value).replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-    const labelFor = p => p && p.name.trim() ? p.name.trim() : p ? `Player ${state.players.indexOf(p)+1}` : "None yet";
-    function roster(gender) { return state.players.filter(p=>p.gender===gender); }
-    function nextFor(gender) { const list=roster(gender); if(!list.length)return null; const current=list.findIndex(p=>p.id===state.lastKicker[gender]); return list[(current+1)%list.length]; }
-    function alternatingNext() {
-      const wanted=state.lastGender ? (state.lastGender==="Female"?"Male":"Female") : GENDERS.find(g=>roster(g).length);
-      let next=wanted ? nextFor(wanted) : null;
-      let nextGender=wanted;
-      if(!next) { nextGender=GENDERS.find(g=>nextFor(g)); next=nextGender?nextFor(nextGender):null; }
-      return {next,nextGender};
-    }
-    function renderKickingProgress() {
-      const {next,nextGender}=alternatingNext();
-      refs.evenProgress.hidden=false;
-      refs.evenProgress.innerHTML=`<div class="progress-summary"><label class="inning-control"><span class="progress-label">Current inning</span><select id="currentInning" aria-label="Current inning">${Array.from({length:state.innings},(_,i)=>`<option value="${i+1}" ${state.currentInning===i+1?"selected":""}>Inning ${i+1}</option>`).join("")}</select></label><div><span class="progress-label">Next kicker</span><span class="progress-name">${esc(next?labelFor(next):"Add players")}</span><span class="section-note">${next?nextGender:"Build the lineup to begin"}</span></div></div><button class="btn btn-primary" data-kicking-action="advance" ${next?"":"disabled"}>Kicked — Next</button>`;
-    }
-    function saveRoster() { localStorage.setItem("kickballRoster",JSON.stringify(state.roster)); }
-    function loadRoster() { try { const saved=JSON.parse(localStorage.getItem("kickballRoster")||"[]"); state.roster=Array.isArray(saved)?saved.filter(p=>p&&p.name).map(p=>({id:p.id||uid(),name:String(p.name),gender:GENDERS.includes(p.gender)?p.gender:"Female"})):[]; } catch { state.roster=[]; } }
-    function renderRoster() {
-      if(!state.roster.length) { refs.rosterList.innerHTML='<div class="empty-state">Your saved roster is empty.</div>'; return; }
-      refs.rosterList.innerHTML=state.roster.map((p,i)=>`<div class="roster-player"><span class="roster-avatar">${esc(p.name.trim().charAt(0).toUpperCase()||"?")}</span><div class="roster-info"><strong>${esc(p.name)}</strong><span>${p.gender}${state.players.some(player=>player.rosterId===p.id)?" · In lineup":""}</span></div><button class="icon-btn add" data-roster-action="add" data-roster-index="${i}" ${state.lineupLocked||state.players.some(player=>player.rosterId===p.id)?"disabled":""}>${state.players.some(player=>player.rosterId===p.id)?"Added":"+ Lineup"}</button><button class="icon-btn delete" data-roster-action="delete" data-roster-index="${i}" aria-label="Remove ${esc(p.name)} from roster">×</button></div>`).join("");
-    }
-    function addRosterPlayer(name,gender) { const clean=name.trim(); if(!clean)return; state.roster.push({id:uid(),name:clean,gender}); saveRoster(); renderRoster(); refs.rosterName.value=""; refs.rosterName.focus(); showToast(`${clean} saved to the roster.`); }
-    function addRosterToLineup(index) { const member=state.roster[index]; if(state.lineupLocked||!member||state.players.some(p=>p.rosterId===member.id))return; const player=normalizePlayer({id:uid(),rosterId:member.id,name:member.name,gender:member.gender,positions:[]}); player.rosterId=member.id; state.players.push(player); render(); showToast(`${member.name} added to this game.`); }
-    function removeRosterPlayer(index) { const member=state.roster[index]; if(!member||!confirm(`Remove ${member.name} from the saved roster?`))return; state.roster.splice(index,1); saveRoster(); renderRoster(); }
-    function positionOptions(playerIndex,inning,selected) { const used=new Set(state.players.map((p,i)=>i===playerIndex?"":p.positions[inning]).filter(p=>p&&p!=="Bench")); return POSITIONS.map(pos=>`<option value="${pos}" ${pos===selected?"selected":""} ${used.has(pos)?"disabled":""}>${pos||"—"}${used.has(pos)?" (taken)":""}</option>`).join(""); }
-    function render() {
-      refs.head.innerHTML=`<tr><th class="player-cell">Player</th>${Array.from({length:state.innings},(_,i)=>`<th>Inn ${i+1}</th>`).join("")}${state.lineupLocked?"":'<th class="no-print">Game actions</th>'}</tr>`;
-      if(!state.players.length) refs.body.innerHTML=`<tr><td colspan="${state.innings+(state.lineupLocked?1:2)}" class="empty-state">No players yet. Add someone from the roster or tap “Add Sub.”</td></tr>`;
-      else refs.body.innerHTML=state.players.map((p,i)=>`<tr><td class="player-cell"><div class="player-wrap"><span class="order">${i+1}</span>${state.lineupLocked?`<span class="locked-value">${esc(labelFor(p))}</span>`:`<input value="${esc(p.name)}" data-field="name" data-index="${i}" aria-label="Player ${i+1} name" placeholder="Player name">`}${p.isSub?' <span class="sub-badge">Sub</span>':""}</div></td>${p.positions.map((pos,inn)=>`<td class="position-cell">${state.lineupLocked?`<span class="locked-value">${esc(pos||"—")}</span>`:`<select data-inning="${inn}" data-index="${i}" aria-label="${esc(labelFor(p))}, inning ${inn+1} position">${positionOptions(i,inn,pos)}</select>`}</td>`).join("")}${state.lineupLocked?"":`<td class="controls-cell no-print"><button class="icon-btn" data-action="up" data-index="${i}" aria-label="Move up">↑</button> <button class="icon-btn" data-action="down" data-index="${i}" aria-label="Move down">↓</button> <button class="icon-btn delete" data-action="delete" data-index="${i}" aria-label="Remove">×</button></td>`}</tr>`).join("");
-      refs.lockLineupBtn.textContent=state.lineupLocked?"Unlock Lineup":"Lock Lineup";
-      refs.lockLineupBtn.className=`btn ${state.lineupLocked?"btn-secondary":"btn-primary"}`;
-      refs.innings.disabled=state.lineupLocked;
-      $("addPlayerBtn").disabled=state.lineupLocked;
-      refs.subGender.disabled=state.lineupLocked;
-      renderKickingProgress();renderRoster();
-    }
-    function addPlayer(){if(state.lineupLocked)return;state.players.push(normalizePlayer(blankPlayer(refs.subGender.value)));render();refs.body.querySelector("tr:last-child input")?.focus();}
-    function movePlayer(i,d){if(state.lineupLocked)return;const t=i+d;if(t<0||t>=state.players.length)return;[state.players[i],state.players[t]]=[state.players[t],state.players[i]];render();}
-    function removePlayer(i){if(state.lineupLocked)return;const [p]=state.players.splice(i,1);if(p&&state.lastKicker[p.gender]===p.id)state.lastKicker[p.gender]=null;render();}
-    function setInnings(value){if(state.lineupLocked)return;state.innings=Math.max(1,Math.min(30,Number(value)||1));state.currentInning=Math.min(state.currentInning,state.innings);refs.innings.value=state.innings;state.players=state.players.map(normalizePlayer);render();}
-    function payload(){return {version:4,teamName:refs.teamName.value,opponent:refs.opponent.value,gameDate:refs.gameDate.value,innings:state.innings,currentInning:state.currentInning,players:state.players,lastKicker:state.lastKicker,lastGender:state.lastGender,lineupLocked:state.lineupLocked};}
-    function apply(data){state.innings=Math.max(1,Math.min(30,Number(data.innings)||9));state.currentInning=Math.max(1,Math.min(state.innings,Number(data.currentInning)||1));refs.innings.value=state.innings;refs.teamName.value=data.teamName||"";refs.opponent.value=data.opponent||"";refs.gameDate.value=data.gameDate||"";state.players=Array.isArray(data.players)?data.players.map(normalizePlayer):[];state.lastKicker={Female:data.lastKicker?.Female||null,Male:data.lastKicker?.Male||null};state.lastGender=GENDERS.includes(data.lastGender)?data.lastGender:null;state.lineupLocked=Boolean(data.lineupLocked);render();}
+    const alpha = (a,b) => a.name.localeCompare(b.name,undefined,{sensitivity:"base",numeric:true});
+    function normalizePlayer(p,innings) { const positions=Array.isArray(p.positions)?p.positions.slice(0,innings):[]; while(positions.length<innings)positions.push(""); return {id:p.id||uid(),rosterId:p.rosterId||null,name:String(p.name||""),gender:GENDERS.includes(p.gender)?p.gender:"Female",isSub:Boolean(p.isSub),positions}; }
+    function normalizeLineup(l,i=0){const innings=Math.max(1,Math.min(30,Number(l?.innings)||9));return {id:l?.id||uid(),name:String(l?.name||`Game ${i+1}`),opponent:String(l?.opponent||""),gameDate:l?.gameDate||today(),innings,currentInning:Math.max(1,Math.min(innings,Number(l?.currentInning)||1)),players:Array.isArray(l?.players)?l.players.map(p=>normalizePlayer(p,innings)):[],lastKicker:{Female:l?.lastKicker?.Female||null,Male:l?.lastKicker?.Male||null},lastGender:GENDERS.includes(l?.lastGender)?l.lastGender:null,lineupLocked:Boolean(l?.lineupLocked)};}
+    function normalizeTeam(t,i=0){const lineups=Array.isArray(t?.lineups)&&t.lineups.length?t.lineups.map(normalizeLineup):[newLineup(1)];const roster=(Array.isArray(t?.roster)?t.roster:[]).filter(p=>p?.name).map(p=>({id:p.id||uid(),name:String(p.name),gender:GENDERS.includes(p.gender)?p.gender:"Female"})).sort(alpha);return {id:t?.id||uid(),name:String(t?.name||`Team ${i+1}`),roster,lineups,activeLineupId:lineups.some(l=>l.id===t?.activeLineupId)?t.activeLineupId:lineups[0].id};}
+    function saveData(){localStorage.setItem("kickballTeams",JSON.stringify({version:5,activeTeamId:state.activeTeamId,teams:state.teams}));}
+    function loadData(){try{const data=JSON.parse(localStorage.getItem("kickballTeams")||"null");if(data?.teams?.length){state.teams=data.teams.map(normalizeTeam);state.activeTeamId=state.teams.some(t=>t.id===data.activeTeamId)?data.activeTeamId:state.teams[0].id;return;}const oldRoster=JSON.parse(localStorage.getItem("kickballRoster")||"[]");const oldGame=JSON.parse(localStorage.getItem("kickballGameDay")||"null");const t=normalizeTeam({name:oldGame?.teamName||"My Team",roster:oldRoster,lineups:oldGame?[oldGame]:undefined});state.teams=[t];state.activeTeamId=t.id;saveData();}catch{const t=normalizeTeam({name:"My Team"});state.teams=[t];state.activeTeamId=t.id;}}
+    const labelFor = p => p?.name.trim() || "Unnamed substitute";
+    function genderPlayers(gender){return game().players.filter(p=>p.gender===gender);}
+    function nextFor(gender){const g=game(),list=genderPlayers(gender);if(!list.length)return null;const current=list.findIndex(p=>p.id===g.lastKicker[gender]);return list[(current+1)%list.length];}
+    function alternatingNext(){const g=game(),wanted=g.lastGender?(g.lastGender==="Female"?"Male":"Female"):GENDERS.find(x=>genderPlayers(x).length);let next=wanted?nextFor(wanted):null,nextGender=wanted;if(!next){nextGender=GENDERS.find(x=>nextFor(x));next=nextGender?nextFor(nextGender):null;}return {next,nextGender};}
+    function renderKickingProgress(){const g=game(),{next,nextGender}=alternatingNext();refs.evenProgress.hidden=false;refs.evenProgress.innerHTML=`<div class="progress-summary"><label class="inning-control"><span class="progress-label">Current inning</span><select id="currentInning" aria-label="Current inning">${Array.from({length:g.innings},(_,i)=>`<option value="${i+1}" ${g.currentInning===i+1?"selected":""}>Inning ${i+1}</option>`).join("")}</select></label><div><span class="progress-label">Next kicker</span><span class="progress-name">${esc(next?labelFor(next):"Add players")}</span><span class="section-note">${next?nextGender:"Build the lineup to begin"}</span></div></div><button class="btn btn-primary" data-kicking-action="advance" ${next?"":"disabled"}>Kicked — Next</button>`;}
+    function renderRoster(){const t=team(),g=game();if(!t.roster.length){refs.rosterList.innerHTML='<div class="empty-state">This team’s roster is empty.</div>';return;}refs.rosterList.innerHTML=t.roster.map((p,i)=>{const added=g.players.some(x=>x.rosterId===p.id);return `<div class="roster-player"><span class="roster-avatar">${esc(p.name.trim().charAt(0).toUpperCase()||"?")}</span><div class="roster-info"><strong>${esc(p.name)}</strong><span>${p.gender}${added?" · In this lineup":""}</span></div><button class="icon-btn add" data-roster-action="add" data-roster-index="${i}" ${g.lineupLocked||added?"disabled":""}>${added?"Added":"+ Lineup"}</button><button class="icon-btn delete" data-roster-action="delete" data-roster-index="${i}" aria-label="Remove ${esc(p.name)} from roster">×</button></div>`;}).join("");}
+    function positionOptions(playerIndex,inning,selected){const used=new Set(game().players.map((p,i)=>i===playerIndex?"":p.positions[inning]).filter(p=>p&&p!=="Bench"));return POSITIONS.map(pos=>`<option value="${pos}" ${pos===selected?"selected":""} ${used.has(pos)?"disabled":""}>${pos||"—"}${used.has(pos)?" (taken)":""}</option>`).join("");}
+    function syncInputs(){const t=team(),g=game();refs.teamName.value=t.name;refs.opponent.value=g.opponent;refs.gameDate.value=g.gameDate;refs.innings.value=g.innings;refs.teamSelect.innerHTML=state.teams.map(x=>`<option value="${x.id}" ${x.id===t.id?"selected":""}>${esc(x.name)}</option>`).join("");refs.lineupSelect.innerHTML=t.lineups.map((x,i)=>`<option value="${x.id}" ${x.id===g.id?"selected":""}>${esc(x.name||`Game ${i+1}`)}</option>`).join("");}
+    function render(){const g=game();syncInputs();refs.head.innerHTML=`<tr><th class="player-cell">Player</th>${Array.from({length:g.innings},(_,i)=>`<th>Inn ${i+1}</th>`).join("")}${g.lineupLocked?"":'<th class="no-print">Game actions</th>'}</tr>`;if(!g.players.length)refs.body.innerHTML=`<tr><td colspan="${g.innings+(g.lineupLocked?1:2)}" class="empty-state">No players yet. Add someone from this team’s roster or tap “Add Sub.”</td></tr>`;else refs.body.innerHTML=g.players.map((p,i)=>`<tr><td class="player-cell"><div class="player-wrap"><span class="order">${i+1}</span>${g.lineupLocked||p.rosterId?`<span class="locked-value">${esc(labelFor(p))}</span>`:`<input value="${esc(p.name)}" data-field="name" data-index="${i}" aria-label="Substitute ${i+1} name" placeholder="Sub name">`}${p.isSub?' <span class="sub-badge">Sub</span>':""}</div></td>${p.positions.map((pos,inn)=>`<td class="position-cell">${g.lineupLocked?`<span class="locked-value">${esc(pos||"—")}</span>`:`<select data-inning="${inn}" data-index="${i}" aria-label="${esc(labelFor(p))}, inning ${inn+1} position">${positionOptions(i,inn,pos)}</select>`}</td>`).join("")}${g.lineupLocked?"":`<td class="controls-cell no-print"><button class="icon-btn" data-action="up" data-index="${i}" aria-label="Move up">↑</button> <button class="icon-btn" data-action="down" data-index="${i}" aria-label="Move down">↓</button> <button class="icon-btn delete" data-action="delete" data-index="${i}" aria-label="Remove">×</button></td>`}</tr>`).join("");refs.lockLineupBtn.textContent=g.lineupLocked?"Unlock Lineup":"Lock Lineup";refs.lockLineupBtn.className=`btn ${g.lineupLocked?"btn-secondary":"btn-primary"}`;refs.innings.disabled=g.lineupLocked;$("addPlayerBtn").disabled=g.lineupLocked;refs.subGender.disabled=g.lineupLocked;$("deleteTeamBtn").disabled=state.teams.length===1;$("deleteLineupBtn").disabled=team().lineups.length===1;renderKickingProgress();renderRoster();}
+    function addRosterPlayer(name,gender){const clean=name.trim(),t=team();if(!clean)return;if(t.roster.some(p=>p.name.localeCompare(clean,undefined,{sensitivity:"base"})===0))return showToast(`${clean} is already on this roster.`);t.roster.push({id:uid(),name:clean,gender});t.roster.sort(alpha);saveData();render();refs.rosterName.value="";refs.rosterName.focus();showToast(`${clean} added to ${t.name}.`);}
+    function addRosterToLineup(index){const t=team(),g=game(),member=t.roster[index];if(g.lineupLocked||!member||g.players.some(p=>p.rosterId===member.id))return;g.players.push(normalizePlayer({rosterId:member.id,name:member.name,gender:member.gender},g.innings));saveData();render();}
+    function removeRosterPlayer(index){const t=team(),member=t.roster[index];if(!member||!confirm(`Remove ${member.name} from ${t.name}?`))return;t.roster.splice(index,1);saveData();render();}
+    function addSub(){const g=game();if(g.lineupLocked)return;g.players.push(normalizePlayer({name:"",gender:refs.subGender.value,isSub:true},g.innings));render();refs.body.querySelector("tr:last-child input")?.focus();}
+    function movePlayer(i,d){const g=game(),to=i+d;if(g.lineupLocked||to<0||to>=g.players.length)return;[g.players[i],g.players[to]]=[g.players[to],g.players[i]];saveData();render();}
+    function removePlayer(i){const g=game();if(g.lineupLocked)return;const [p]=g.players.splice(i,1);if(p&&g.lastKicker[p.gender]===p.id)g.lastKicker[p.gender]=null;saveData();render();}
+    function setInnings(value){const g=game();if(g.lineupLocked)return;g.innings=Math.max(1,Math.min(30,Number(value)||1));g.currentInning=Math.min(g.currentInning,g.innings);g.players=g.players.map(p=>normalizePlayer(p,g.innings));saveData();render();}
+    function addTeam(){const name=prompt("Team name");if(!name?.trim())return;const t=normalizeTeam({name:name.trim()});state.teams.push(t);state.activeTeamId=t.id;saveData();render();showToast(`${t.name} roster created.`);}
+    function deleteTeam(){const t=team();if(state.teams.length===1||!confirm(`Delete ${t.name} and all of its lineups?`))return;state.teams=state.teams.filter(x=>x.id!==t.id);state.activeTeamId=state.teams[0].id;saveData();render();}
+    function addLineup(){const t=team(),l=newLineup(t.lineups.length+1);t.lineups.push(l);t.activeLineupId=l.id;saveData();render();showToast(`${l.name} created for ${t.name}.`);}
+    function deleteLineup(){const t=team(),g=game();if(t.lineups.length===1||!confirm(`Delete ${g.name}?`))return;t.lineups=t.lineups.filter(x=>x.id!==g.id);t.activeLineupId=t.lineups[0].id;saveData();render();}
+    function clearLineup(){if(!confirm("Clear this lineup and its kicking progress?"))return;const t=team(),g=game(),replacement=newLineup(t.lineups.indexOf(g)+1);replacement.id=g.id;replacement.name=g.name;t.lineups[t.lineups.indexOf(g)]=replacement;saveData();render();}
+    function payload(){return {version:5,activeTeamId:state.activeTeamId,teams:state.teams};}
+    function apply(data){if(data?.teams?.length){state.teams=data.teams.map(normalizeTeam);state.activeTeamId=state.teams.some(t=>t.id===data.activeTeamId)?data.activeTeamId:state.teams[0].id;}else{const t=normalizeTeam({name:data.teamName||"Imported Team",lineups:[data]});state.teams=[t];state.activeTeamId=t.id;}saveData();render();}
     let toastTimer;function showToast(msg){refs.toast.textContent=msg;refs.toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>refs.toast.classList.remove("show"),2200);}
-    function save(){localStorage.setItem("kickballGameDay",JSON.stringify(payload()));showToast("Game saved on this device.");}
-    function load(){const saved=localStorage.getItem("kickballGameDay")||localStorage.getItem("baseballLineupGenerator");if(!saved)return showToast("No saved lineup found.");try{apply(JSON.parse(saved));showToast("Saved game loaded.");}catch{showToast("The saved lineup could not be read.");}}
-    function clearAll(){if(!confirm("Clear the entire game and kicking progress?"))return;refs.teamName.value=refs.opponent.value="";refs.gameDate.value=new Date().toISOString().slice(0,10);state.innings=9;state.currentInning=1;refs.innings.value=9;state.players=[];state.lastKicker={Female:null,Male:null};state.lastGender=null;state.lineupLocked=false;render();}
-    function exportJson(){const blob=new Blob([JSON.stringify(payload(),null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${(refs.teamName.value||"kickball-lineup").trim().replace(/[^a-z0-9]+/gi,"-").toLowerCase()}.json`;a.click();URL.revokeObjectURL(a.href);}
-    function importJson(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{apply(JSON.parse(reader.result));showToast("Lineup imported.");}catch{showToast("That is not a valid lineup backup.");}};reader.readAsText(file);}
-    refs.body.addEventListener("input",e=>{const input=e.target.closest('input[data-field="name"]');if(!input)return;state.players[+input.dataset.index].name=input.value;renderKickingProgress();});
-    refs.body.addEventListener("change",e=>{const field=e.target.closest("select[data-field]");if(field){const p=state.players[+field.dataset.index];const old=p.gender;p.gender=field.value;if(state.lastKicker[old]===p.id)state.lastKicker[old]=null;render();return;}const pos=e.target.closest("select[data-inning]");if(pos){state.players[+pos.dataset.index].positions[+pos.dataset.inning]=pos.value;render();}});
+    function exportJson(){const blob=new Blob([JSON.stringify(payload(),null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="kickball-teams.json";a.click();URL.revokeObjectURL(a.href);}
+    function importJson(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{apply(JSON.parse(reader.result));showToast("Teams and lineups imported.");}catch{showToast("That is not a valid backup.");}};reader.readAsText(file);}
+    refs.body.addEventListener("input",e=>{const input=e.target.closest('input[data-field="name"]');if(!input)return;game().players[+input.dataset.index].name=input.value;saveData();renderKickingProgress();});
+    refs.body.addEventListener("change",e=>{const pos=e.target.closest("select[data-inning]");if(pos){game().players[+pos.dataset.index].positions[+pos.dataset.inning]=pos.value;saveData();render();}});
     refs.body.addEventListener("click",e=>{const b=e.target.closest("button[data-action]");if(!b)return;if(b.dataset.action==="up")movePlayer(+b.dataset.index,-1);if(b.dataset.action==="down")movePlayer(+b.dataset.index,1);if(b.dataset.action==="delete")removePlayer(+b.dataset.index);});
-    refs.evenProgress.addEventListener("change",e=>{if(e.target.id==="currentInning")state.currentInning=+e.target.value;});
-    function advanceKicker(gender){const next=gender?nextFor(gender):alternatingNext().next;if(!next)return;state.lastKicker[next.gender]=next.id;state.lastGender=next.gender;renderKickingProgress();}
-    refs.evenProgress.addEventListener("click",e=>{if(e.target.closest('[data-kicking-action="advance"]'))advanceKicker();});
+    refs.evenProgress.addEventListener("change",e=>{if(e.target.id==="currentInning"){game().currentInning=+e.target.value;saveData();}});
+    refs.evenProgress.addEventListener("click",e=>{if(!e.target.closest('[data-kicking-action="advance"]'))return;const g=game(),next=alternatingNext().next;if(next){g.lastKicker[next.gender]=next.id;g.lastGender=next.gender;saveData();renderKickingProgress();}});
     $("rosterForm").addEventListener("submit",e=>{e.preventDefault();addRosterPlayer(refs.rosterName.value,refs.rosterGender.value);});
     refs.rosterList.addEventListener("click",e=>{const b=e.target.closest("button[data-roster-action]");if(!b)return;const i=+b.dataset.rosterIndex;if(b.dataset.rosterAction==="add")addRosterToLineup(i);if(b.dataset.rosterAction==="delete")removeRosterPlayer(i);});
-    refs.lockLineupBtn.addEventListener("click",()=>{state.lineupLocked=!state.lineupLocked;render();showToast(state.lineupLocked?"Lineup locked.":"Lineup unlocked.");});
-    $("addPlayerBtn").addEventListener("click",addPlayer);refs.innings.addEventListener("change",e=>setInnings(e.target.value));$("saveBtn").addEventListener("click",save);$("loadBtn").addEventListener("click",load);$("clearBtn").addEventListener("click",clearAll);$("printBtn").addEventListener("click",()=>{$("printTitle").textContent=`${refs.teamName.value||"Kickball"} Lineup`;$('printMeta').textContent=[refs.opponent.value&&`vs. ${refs.opponent.value}`,refs.gameDate.value].filter(Boolean).join(" • ");window.print();});$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
-    loadRoster();refs.gameDate.value=new Date().toISOString().slice(0,10);render();
+    refs.teamSelect.addEventListener("change",e=>{state.activeTeamId=e.target.value;saveData();render();});refs.lineupSelect.addEventListener("change",e=>{team().activeLineupId=e.target.value;saveData();render();});
+    refs.opponent.addEventListener("input",e=>{game().opponent=e.target.value;saveData();});refs.gameDate.addEventListener("change",e=>{game().gameDate=e.target.value;saveData();});
+    refs.lockLineupBtn.addEventListener("click",()=>{game().lineupLocked=!game().lineupLocked;saveData();render();showToast(game().lineupLocked?"Lineup locked.":"Lineup unlocked.");});
+    $("newTeamBtn").addEventListener("click",addTeam);$("deleteTeamBtn").addEventListener("click",deleteTeam);$("addLineupBtn").addEventListener("click",addLineup);$("deleteLineupBtn").addEventListener("click",deleteLineup);$("addPlayerBtn").addEventListener("click",addSub);refs.innings.addEventListener("change",e=>setInnings(e.target.value));
+    $("saveBtn").addEventListener("click",()=>{saveData();showToast("All teams and lineups saved.");});$("loadBtn").addEventListener("click",()=>{loadData();render();showToast("Saved teams loaded.");});$("clearBtn").addEventListener("click",clearLineup);$("printBtn").addEventListener("click",()=>{$("printTitle").textContent=`${team().name} — ${game().name}`;$("printMeta").textContent=[game().opponent&&`vs. ${game().opponent}`,game().gameDate].filter(Boolean).join(" • ");window.print();});$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
+    loadData();render();
   </script>
 </body>
 </html>
