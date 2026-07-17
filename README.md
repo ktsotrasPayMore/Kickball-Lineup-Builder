@@ -28,7 +28,7 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Positions already assigned in an inning are disabled for every other player
 - Sticky player-name column and table header for easier phone use
 - Reorder and remove players
-- Lock only a fully assigned lineup to replace editing controls with easy-to-read text until it is unlocked
+- Lock only a fully assigned lineup to replace editing controls with easy-to-read text and prevent deleting the lineup or clearing its positions until it is unlocked
 - Clear all fielding positions without changing the kicking lineup
 - Browser save/load and JSON import/export for all teams and lineups
 - Print or save a landscape PDF containing only the lineup and fielding assignments
