@@ -1,564 +1,224 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Free baseball and softball lineup card generator with unlimited players, inning-by-inning positions, and a Rover position." />
-  <title>Baseball Lineup Generator</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="A phone-friendly kickball lineup, fielding, and live kicking-order tracker.">
+  <title>Kickball Game Day</title>
   <style>
-    :root {
-      --navy: #102a43;
-      --blue: #1769aa;
-      --blue-dark: #0f4f87;
-      --sky: #eaf4fb;
-      --green: #2d8a4e;
-      --red: #ba3a3a;
-      --gold: #f2b84b;
-      --ink: #243b53;
-      --muted: #627d98;
-      --line: #d7e2ea;
-      --paper: #ffffff;
-      --bg: #f4f7fa;
-      --shadow: 0 10px 30px rgba(16, 42, 67, .10);
-      --radius: 14px;
+    :root { --navy:#12263a; --blue:#1769aa; --blue2:#e8f4fc; --green:#218653; --green2:#e9f7ef; --red:#bd3c43; --gold:#f4b942; --ink:#203447; --muted:#62778a; --line:#d6e1e9; --paper:#fff; --bg:#f3f7fa; --shadow:0 12px 35px rgba(18,38,58,.12); --sticky:188px; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:var(--bg); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.45; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    .site-header { background:linear-gradient(135deg,#10283f,#1769aa 67%,#1f8b88); color:#fff; padding:22px 20px 76px; overflow:hidden; position:relative; }
+    .site-header::after { content:""; position:absolute; width:330px; height:330px; border:64px solid rgba(255,255,255,.06); border-radius:50%; right:-130px; top:-180px; }
+    .header-inner { max-width:1180px; margin:auto; position:relative; z-index:1; }
+    .brand { font-weight:850; letter-spacing:.08em; font-size:.78rem; opacity:.9; }
+    h1 { margin:25px 0 8px; font-size:clamp(2rem,6vw,3.5rem); line-height:1.05; }
+    .lead { max-width:720px; margin:0; color:#dceefa; }
+    main { max-width:1180px; margin:-48px auto 60px; padding:0 18px; position:relative; z-index:2; }
+    .app-shell { background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden; }
+    .toolbar { display:flex; flex-wrap:wrap; align-items:end; gap:11px; padding:17px; border-bottom:1px solid var(--line); background:#fbfdff; }
+    .field { display:grid; gap:5px; min-width:145px; flex:1; }
+    .field.small { flex:0 0 92px; min-width:92px; }
+    label,.label { color:var(--navy); font-size:.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.055em; }
+    input,select { width:100%; border:1px solid #b7c8d6; border-radius:9px; padding:10px; background:#fff; color:var(--ink); outline:none; }
+    input:focus,select:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(23,105,170,.13); }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
+    .btn { border:0; border-radius:9px; padding:10px 14px; min-height:42px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+    .btn-primary { background:var(--blue); color:#fff; }
+    .btn-secondary { background:#e7f0f6; color:var(--navy); }
+    .btn-ghost { background:#fff; color:var(--navy); border:1px solid var(--line); }
+    .btn-danger { background:#fff0f1; color:var(--red); }
+    .content { padding:20px; display:grid; gap:20px; }
+    .section-card { border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+    .section-head { padding:14px 16px; display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; background:var(--blue2); border-bottom:1px solid var(--line); }
+    .section-title { margin:0; color:var(--navy); font-size:1.08rem; }
+    .section-note { color:var(--muted); font-size:.85rem; margin-top:2px; }
+    .tracker { padding:16px; display:grid; grid-template-columns:minmax(200px,1fr) 2fr; gap:16px; background:linear-gradient(120deg,#fff,#f5fbff); }
+    .due-card { background:var(--navy); color:#fff; border-radius:12px; padding:17px; min-height:118px; display:flex; flex-direction:column; justify-content:center; }
+    .due-card .eyebrow { color:#aedaef; font-weight:800; text-transform:uppercase; letter-spacing:.08em; font-size:.72rem; }
+    .due-name { font-size:1.55rem; font-weight:900; margin:3px 0; }
+    .due-detail { color:#d9eaf5; font-size:.88rem; }
+    .gender-trackers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .gender-card { border:1px solid var(--line); border-radius:11px; padding:12px; background:#fff; }
+    .gender-card strong { display:block; color:var(--navy); }
+    .last-name { min-height:24px; color:var(--muted); margin:3px 0 9px; font-size:.9rem; }
+    .gender-card select { padding:8px; }
+    .tracker-help { grid-column:1/-1; color:var(--muted); font-size:.8rem; }
+    .roster-builder { padding:14px; display:grid; gap:12px; }
+    .roster-form { display:grid; grid-template-columns:minmax(160px,1fr) 130px auto; gap:8px; align-items:end; }
+    .roster-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; }
+    .roster-player { border:1px solid var(--line); border-radius:10px; padding:10px; display:flex; align-items:center; gap:9px; background:#fff; }
+    .roster-avatar { flex:0 0 34px; height:34px; display:grid; place-items:center; border-radius:50%; background:var(--blue2); color:var(--blue); font-weight:900; }
+    .roster-info { min-width:0; flex:1; }
+    .roster-info strong,.roster-info span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .roster-info span { color:var(--muted); font-size:.78rem; }
+    .roster-player .icon-btn.add { color:var(--green); width:auto; padding:0 8px; }
+    .table-wrap { width:100%; overflow:auto; max-height:70vh; overscroll-behavior-inline:contain; }
+    table { border-collapse:separate; border-spacing:0; width:100%; min-width:760px; }
+    th,td { border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:8px; text-align:left; background:#fff; }
+    th { position:sticky; top:0; z-index:4; background:#f7fafc; color:var(--navy); font-size:.74rem; text-transform:uppercase; letter-spacing:.045em; white-space:nowrap; }
+    th:last-child,td:last-child { border-right:0; }
+    tr:last-child td { border-bottom:0; }
+    .player-cell { position:sticky; left:0; z-index:2; min-width:var(--sticky); width:var(--sticky); box-shadow:4px 0 7px rgba(18,38,58,.07); }
+    th.player-cell { z-index:6; background:#edf5fa; }
+    .player-wrap { display:flex; align-items:center; gap:7px; }
+    .order { flex:0 0 24px; height:24px; border-radius:50%; background:var(--blue2); color:var(--blue); font-size:.76rem; font-weight:900; display:grid; place-items:center; }
+    td input,td select { padding:8px; border-radius:7px; }
+    .position-cell { min-width:108px; }
+    .gender-cell { min-width:105px; }
+    .controls-cell { min-width:172px; white-space:nowrap; }
+    .icon-btn { border:1px solid var(--line); background:#fff; color:var(--navy); min-width:31px; height:32px; border-radius:7px; font-weight:900; }
+    .icon-btn.kicked { width:auto; padding:0 9px; background:var(--green2); color:var(--green); border-color:#b9dfca; }
+    .icon-btn.delete { color:var(--red); }
+    .empty-state { text-align:center; color:var(--muted); padding:30px; }
+    .footer-note { text-align:center; color:var(--muted); font-size:.83rem; }
+    .toast { position:fixed; right:16px; bottom:16px; z-index:20; background:var(--navy); color:#fff; padding:11px 14px; border-radius:9px; box-shadow:var(--shadow); opacity:0; transform:translateY(10px); pointer-events:none; transition:.2s; }
+    .toast.show { opacity:1; transform:none; }
+    .print-header { display:none; }
+    @media(max-width:700px) {
+      :root { --sticky:154px; }
+      .site-header { padding:18px 16px 65px; }
+      h1 { margin-top:19px; }
+      main { padding:0 8px; }
+      .toolbar,.content { padding:11px; }
+      .field,.field.small { min-width:calc(50% - 6px); flex:1 1 calc(50% - 6px); }
+      .actions { width:100%; margin:0; }
+      .actions .btn { flex:1 1 auto; padding-inline:10px; }
+      .tracker { grid-template-columns:1fr; padding:11px; gap:10px; }
+      .roster-form { grid-template-columns:1fr 105px; }
+      .roster-form .btn { grid-column:1/-1; }
+      .tracker-help { grid-column:auto; }
+      .section-head { padding:12px; }
+      .section-head>.btn { width:100%; }
+      .table-wrap { max-height:64vh; }
+      .player-wrap { gap:4px; }
+      .order { flex-basis:21px; width:21px; height:21px; }
+      td,th { padding:6px; }
     }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      color: var(--ink);
-      background: var(--bg);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.45;
-    }
-
-    button, input, select { font: inherit; }
-    button { cursor: pointer; }
-
-    .site-header {
-      background: linear-gradient(135deg, #0e2b45 0%, #1769aa 65%, #2387c8 100%);
-      color: white;
-      padding: 22px 20px 76px;
-      position: relative;
-      overflow: hidden;
-    }
-    .site-header::after {
-      content: "";
-      position: absolute;
-      width: 380px;
-      height: 380px;
-      border: 70px solid rgba(255,255,255,.06);
-      border-radius: 50%;
-      right: -150px;
-      top: -190px;
-    }
-    .header-inner { max-width: 1180px; margin: auto; position: relative; z-index: 1; }
-    .brand { font-weight: 800; letter-spacing: .02em; font-size: 1rem; opacity: .95; }
-    h1 { margin: 32px 0 10px; font-size: clamp(2rem, 5vw, 3.6rem); line-height: 1.05; }
-    .lead { max-width: 760px; margin: 0; color: #d9ecfa; font-size: 1.08rem; }
-
-    main { max-width: 1180px; margin: -48px auto 70px; padding: 0 20px; position: relative; z-index: 2; }
-    .app-shell {
-      background: var(--paper);
-      border: 1px solid rgba(215,226,234,.85);
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: end;
-      gap: 12px;
-      padding: 18px;
-      border-bottom: 1px solid var(--line);
-      background: #fbfdff;
-    }
-    .field { display: grid; gap: 6px; min-width: 150px; flex: 1; }
-    .field.small { flex: 0 0 105px; min-width: 105px; }
-    label { color: var(--navy); font-size: .8rem; font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }
-    input, select {
-      width: 100%;
-      border: 1px solid #b8c9d8;
-      border-radius: 8px;
-      padding: 10px 11px;
-      background: white;
-      color: var(--ink);
-      outline: none;
-      transition: border .15s, box-shadow .15s;
-    }
-    input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(23,105,170,.13); }
-
-    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
-    .btn {
-      border: 0;
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-weight: 750;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      min-height: 42px;
-    }
-    .btn-primary { background: var(--blue); color: white; }
-    .btn-primary:hover { background: var(--blue-dark); }
-    .btn-secondary { background: #e8f0f6; color: var(--navy); }
-    .btn-secondary:hover { background: #dce9f2; }
-    .btn-danger { background: #fff0f0; color: var(--red); }
-    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
-
-    .content { padding: 20px; display: grid; gap: 20px; }
-    .section-card { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-    .section-head {
-      padding: 15px 16px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--sky);
-      border-bottom: 1px solid var(--line);
-    }
-    .section-title { margin: 0; color: var(--navy); font-size: 1.1rem; }
-    .section-note { color: var(--muted); font-size: .88rem; }
-
-    .table-wrap { width: 100%; overflow-x: auto; }
-    table { border-collapse: collapse; width: 100%; min-width: 780px; }
-    th, td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 8px; text-align: left; }
-    th:last-child, td:last-child { border-right: 0; }
-    tr:last-child td { border-bottom: 0; }
-    th {
-      background: #f8fafc;
-      color: var(--navy);
-      font-size: .78rem;
-      text-transform: uppercase;
-      letter-spacing: .045em;
-      white-space: nowrap;
-    }
-    td.order-cell { width: 70px; text-align: center; font-weight: 800; color: var(--blue); }
-    td.player-cell { min-width: 190px; }
-    td.number-cell { width: 90px; }
-    td.position-cell { min-width: 112px; }
-    td.controls-cell { width: 126px; white-space: nowrap; }
-    td input, td select { padding: 8px 9px; border-radius: 6px; }
-    .icon-btn {
-      border: 1px solid var(--line);
-      background: white;
-      color: var(--navy);
-      width: 31px;
-      height: 31px;
-      border-radius: 6px;
-      padding: 0;
-      font-weight: 900;
-    }
-    .icon-btn:hover { background: var(--sky); }
-    .icon-btn.delete { color: var(--red); }
-
-    .warning-bar {
-      display: none;
-      margin: 0 16px 16px;
-      padding: 10px 12px;
-      border: 1px solid #f3cf82;
-      background: #fff8e7;
-      color: #78520e;
-      border-radius: 8px;
-      font-size: .88rem;
-    }
-    .warning-bar.show { display: block; }
-
-    .empty-state { padding: 28px; text-align: center; color: var(--muted); }
-
-    .print-header { display: none; }
-    .footer-note { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 18px; }
-
-    .toast {
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      background: var(--navy);
-      color: white;
-      padding: 11px 14px;
-      border-radius: 9px;
-      box-shadow: var(--shadow);
-      opacity: 0;
-      transform: translateY(12px);
-      pointer-events: none;
-      transition: .2s;
-      z-index: 20;
-    }
-    .toast.show { opacity: 1; transform: translateY(0); }
-
-    @media (max-width: 760px) {
-      .site-header { padding-bottom: 64px; }
-      main { padding: 0 10px; }
-      .toolbar, .content { padding: 12px; }
-      .actions { width: 100%; margin-left: 0; }
-      .actions .btn { flex: 1; }
-      .field, .field.small { min-width: calc(50% - 6px); flex: 1 1 calc(50% - 6px); }
-    }
-
+    @media(max-width:390px) { .gender-trackers { grid-template-columns:1fr; } }
     @media print {
-      @page { size: landscape; margin: .35in; }
-      body { background: white; color: black; font-size: 9pt; }
-      .site-header, .toolbar, .no-print, .footer-note, .toast { display: none !important; }
-      main { max-width: none; margin: 0; padding: 0; }
-      .app-shell { box-shadow: none; border: 0; border-radius: 0; }
-      .content { padding: 0; gap: 12px; }
-      .print-header { display: block; margin-bottom: 10px; }
-      .print-header h2 { margin: 0 0 4px; font-size: 17pt; }
-      .print-meta { display: flex; gap: 24px; font-size: 10pt; }
-      .section-card { break-inside: avoid; border-color: #777; }
-      .section-head { padding: 6px 8px; background: #eee !important; border-color: #777; }
-      .section-note, .section-head .btn { display: none !important; }
-      th, td { padding: 4px; border-color: #999; }
-      th { background: #eee !important; color: black; }
-      td input, td select {
-        appearance: none;
-        border: 0;
-        padding: 0;
-        color: black;
-        background: transparent;
-        box-shadow: none;
-      }
-      td.controls-cell { display: none; }
-      th.controls-heading { display: none; }
-      table { min-width: 0; }
+      @page { size:landscape; margin:.3in; }
+      body { background:#fff; font-size:8pt; }
+      .site-header,.toolbar,.no-print,.footer-note,.toast { display:none!important; }
+      main { max-width:none; margin:0; padding:0; }
+      .app-shell,.section-card { border:0; box-shadow:none; }
+      .content { padding:0; gap:10px; }
+      .print-header { display:block; }
+      .print-header h2 { margin:0; }
+      .tracker { grid-template-columns:1fr 2fr; padding:7px; }
+      .table-wrap { overflow:visible; max-height:none; }
+      table { min-width:0; }
+      th,.player-cell { position:static; box-shadow:none; }
+      th,td { padding:3px; }
+      td input,td select { appearance:none; border:0; padding:0; box-shadow:none; }
     }
   </style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="brand">COACH'S LINEUP TOOLS</div>
-      <h1>Baseball Lineup Generator</h1>
-      <p class="lead">Build a batting order, assign defensive positions for every inning, and print a clean lineup card for your dugout.</p>
-    </div>
-  </header>
-
+  <header class="site-header"><div class="header-inner"><div class="brand">GAME DAY TOOLS</div><h1>Kickball Lineup & Kicking Tracker</h1><p class="lead">Plan each inning, keep genders alternating, and see who is due up at a glance.</p></div></header>
   <main>
     <div class="app-shell">
-      <section class="toolbar no-print" aria-label="Lineup settings">
-        <div class="field">
-          <label for="teamName">Team name</label>
-          <input id="teamName" type="text" placeholder="Home Team" autocomplete="off" />
-        </div>
-        <div class="field">
-          <label for="opponent">Opponent</label>
-          <input id="opponent" type="text" placeholder="Opponent" autocomplete="off" />
-        </div>
-        <div class="field">
-          <label for="gameDate">Game date</label>
-          <input id="gameDate" type="date" />
-        </div>
-        <div class="field small">
-          <label for="innings">Innings</label>
-          <input id="innings" type="number" min="1" max="30" value="7" />
-        </div>
-        <div class="actions">
-          <button class="btn btn-secondary" id="saveBtn" type="button">Save</button>
-          <button class="btn btn-ghost" id="loadBtn" type="button">Load</button>
-          <button class="btn btn-primary" id="printBtn" type="button">Print / PDF</button>
-          <button class="btn btn-danger" id="clearBtn" type="button">Clear</button>
-        </div>
+      <section class="toolbar no-print" aria-label="Game settings">
+        <div class="field"><label for="teamName">Team name</label><input id="teamName" placeholder="Home Team" autocomplete="off"></div>
+        <div class="field"><label for="opponent">Opponent</label><input id="opponent" placeholder="Opponent" autocomplete="off"></div>
+        <div class="field"><label for="gameDate">Game date</label><input id="gameDate" type="date"></div>
+        <div class="field small"><label for="innings">Innings</label><input id="innings" type="number" min="1" max="30" value="7"></div>
+        <div class="actions"><button class="btn btn-secondary" id="saveBtn">Save</button><button class="btn btn-ghost" id="loadBtn">Load</button><button class="btn btn-primary" id="printBtn">Print / PDF</button><button class="btn btn-danger" id="clearBtn">Clear</button></div>
       </section>
-
       <div class="content">
-        <div class="print-header">
-          <h2 id="printTitle">Baseball Lineup</h2>
-          <div class="print-meta"><span id="printOpponent"></span><span id="printDate"></span></div>
-        </div>
-
-        <section class="section-card">
-          <div class="section-head">
-            <div>
-              <h2 class="section-title">Batting Order & Defensive Positions</h2>
-              <div class="section-note">Add as many players as needed. Use the arrows to change batting order.</div>
-            </div>
-            <button class="btn btn-primary no-print" id="addPlayerBtn" type="button">+ Add Player</button>
-          </div>
-          <div class="table-wrap">
-            <table aria-label="Baseball lineup">
-              <thead id="lineupHead"></thead>
-              <tbody id="lineupBody"></tbody>
-            </table>
-          </div>
-          <div class="warning-bar" id="duplicateWarning"></div>
-        </section>
-
+        <div class="print-header"><h2 id="printTitle">Kickball Lineup</h2><span id="printMeta"></span></div>
         <section class="section-card no-print">
-          <div class="section-head">
-            <div>
-              <h2 class="section-title">Lineup Data</h2>
-              <div class="section-note">Download a backup or transfer the lineup to another device.</div>
-            </div>
-            <div class="actions">
-              <button class="btn btn-secondary" id="exportBtn" type="button">Export JSON</button>
-              <label class="btn btn-ghost" for="importFile" style="text-transform:none;letter-spacing:0;font-size:inherit;">Import JSON</label>
-              <input id="importFile" type="file" accept="application/json,.json" hidden />
-            </div>
+          <div class="section-head"><div><h2 class="section-title">Team Roster</h2><div class="section-note">Saved automatically on this device. Add players from your roster to any game.</div></div></div>
+          <div class="roster-builder">
+            <form class="roster-form" id="rosterForm">
+              <div class="field"><label for="rosterName">Player name</label><input id="rosterName" required placeholder="Player name" autocomplete="off"></div>
+              <div class="field"><label for="rosterGender">Gender</label><select id="rosterGender"><option>Female</option><option>Male</option></select></div>
+              <button class="btn btn-primary" type="submit">Add to Roster</button>
+            </form>
+            <div class="roster-list" id="rosterList"></div>
           </div>
         </section>
+        <section class="section-card">
+          <div class="section-head"><div><h2 class="section-title">Live Kicking Tracker</h2><div class="section-note">Tap “Kicked” after every at-bat. The next player is calculated within the alternating gender order.</div></div></div>
+          <div class="tracker">
+            <div class="due-card"><span class="eyebrow">Due up next</span><span class="due-name" id="dueName">Add players</span><span class="due-detail" id="dueDetail">The tracker will appear here.</span></div>
+            <div class="gender-trackers" id="genderTrackers"></div>
+            <div class="tracker-help">Have an uneven roster? Each gender cycles through its own list, so alternation continues without requiring matching counts. Use the selectors to correct either gender's last kicker at any time.</div>
+          </div>
+        </section>
+        <section class="section-card">
+          <div class="section-head"><div><h2 class="section-title">Kicking Order & Fielding by Inning</h2><div class="section-note">The player column stays visible while you scroll. A field position can only be used once per inning.</div></div><button class="btn btn-primary no-print" id="addPlayerBtn">+ Add Player</button></div>
+          <div class="table-wrap"><table aria-label="Kickball lineup"><thead id="lineupHead"></thead><tbody id="lineupBody"></tbody></table></div>
+        </section>
+        <section class="section-card no-print"><div class="section-head"><div><h2 class="section-title">Lineup Backup</h2><div class="section-note">Download your lineup or transfer it to another device.</div></div><div class="actions"><button class="btn btn-secondary" id="exportBtn">Export JSON</button><label class="btn btn-ghost" for="importFile" style="text-transform:none;letter-spacing:0;font-size:inherit">Import JSON</label><input id="importFile" type="file" accept="application/json,.json" hidden></div></div></section>
       </div>
     </div>
-    <p class="footer-note">Your lineup stays in your browser unless you export it.</p>
+    <p class="footer-note">Your lineup stays in this browser unless you export it.</p>
   </main>
-
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
   <script>
-    const POSITIONS = [
-      "", "P", "C", "1B", "2B", "3B", "SS", "LF", "LCF", "CF", "RCF", "RF", "Rover", "EH", "Bench"
-    ];
-
-    const state = {
-      innings: 7,
-      players: []
-    };
-
-    const $ = (id) => document.getElementById(id);
-    const refs = {
-      teamName: $("teamName"), opponent: $("opponent"), gameDate: $("gameDate"), innings: $("innings"),
-      lineupHead: $("lineupHead"), lineupBody: $("lineupBody"), warning: $("duplicateWarning"), toast: $("toast")
-    };
-
-    function uid() {
-      return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+    const POSITIONS = ["", "P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "Rover", "Bench"];
+    const GENDERS = ["Female", "Male"];
+    const state = { innings:7, players:[], roster:[], lastKicker:{Female:null,Male:null}, lastGender:null };
+    const $ = id => document.getElementById(id);
+    const refs = { teamName:$("teamName"), opponent:$("opponent"), gameDate:$("gameDate"), innings:$("innings"), head:$("lineupHead"), body:$("lineupBody"), dueName:$("dueName"), dueDetail:$("dueDetail"), genderTrackers:$("genderTrackers"), rosterList:$("rosterList"), rosterName:$("rosterName"), rosterGender:$("rosterGender"), toast:$("toast") };
+    const uid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2);
+    const blankPlayer = gender => ({ id:uid(), name:"", gender:gender || (state.players.length%2 ? "Male" : "Female"), positions:Array(state.innings).fill("") });
+    function normalizePlayer(p) { const positions=Array.isArray(p.positions)?p.positions.slice(0,state.innings):[]; while(positions.length<state.innings) positions.push(""); return {id:p.id||uid(),rosterId:p.rosterId||null,name:String(p.name||""),gender:GENDERS.includes(p.gender)?p.gender:"Female",positions}; }
+    const esc = value => String(value).replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+    const labelFor = p => p && p.name.trim() ? p.name.trim() : p ? `Player ${state.players.indexOf(p)+1}` : "None yet";
+    function roster(gender) { return state.players.filter(p=>p.gender===gender); }
+    function nextFor(gender) { const list=roster(gender); if(!list.length)return null; const current=list.findIndex(p=>p.id===state.lastKicker[gender]); return list[(current+1)%list.length]; }
+    function markKicked(id) { const p=state.players.find(player=>player.id===id); if(!p)return; state.lastKicker[p.gender]=p.id; state.lastGender=p.gender; render(); showToast(`${labelFor(p)} marked as last kicker.`); }
+    function renderTracker() {
+      const wanted=state.lastGender ? (state.lastGender==="Female"?"Male":"Female") : GENDERS.find(g=>roster(g).length);
+      let next=wanted ? nextFor(wanted) : null;
+      let nextGender=wanted;
+      if(!next) { nextGender=GENDERS.find(g=>nextFor(g)); next=nextGender?nextFor(nextGender):null; }
+      refs.dueName.textContent=next?labelFor(next):"Add players";
+      refs.dueDetail.textContent=next?`${nextGender} • follows ${state.lastGender ? labelFor(state.players.find(p=>p.id===state.lastKicker[state.lastGender])) : "the start of the order"}`:"The tracker will appear here.";
+      refs.genderTrackers.innerHTML=GENDERS.map(g=>{const last=state.players.find(p=>p.id===state.lastKicker[g]);return `<div class="gender-card"><strong>${g} rotation</strong><div class="last-name">Last: ${esc(labelFor(last))} · Next: ${esc(labelFor(nextFor(g)))}</div><label for="last-${g}">Set last kicker</label><select id="last-${g}" data-last-gender="${g}"><option value="">None yet</option>${roster(g).map(p=>`<option value="${p.id}" ${p.id===state.lastKicker[g]?"selected":""}>${esc(labelFor(p))}</option>`).join("")}</select></div>`}).join("");
     }
-
-    function blankPlayer() {
-      return { id: uid(), name: "", number: "", positions: Array(state.innings).fill("") };
+    function saveRoster() { localStorage.setItem("kickballRoster",JSON.stringify(state.roster)); }
+    function loadRoster() { try { const saved=JSON.parse(localStorage.getItem("kickballRoster")||"[]"); state.roster=Array.isArray(saved)?saved.filter(p=>p&&p.name).map(p=>({id:p.id||uid(),name:String(p.name),gender:GENDERS.includes(p.gender)?p.gender:"Female"})):[]; } catch { state.roster=[]; } }
+    function renderRoster() {
+      if(!state.roster.length) { refs.rosterList.innerHTML='<div class="empty-state">Your saved roster is empty.</div>'; return; }
+      refs.rosterList.innerHTML=state.roster.map((p,i)=>`<div class="roster-player"><span class="roster-avatar">${esc(p.name.trim().charAt(0).toUpperCase()||"?")}</span><div class="roster-info"><strong>${esc(p.name)}</strong><span>${p.gender}${state.players.some(player=>player.rosterId===p.id)?" · In lineup":""}</span></div><button class="icon-btn add" data-roster-action="add" data-roster-index="${i}" ${state.players.some(player=>player.rosterId===p.id)?"disabled":""}>${state.players.some(player=>player.rosterId===p.id)?"Added":"+ Lineup"}</button><button class="icon-btn delete" data-roster-action="delete" data-roster-index="${i}" aria-label="Remove ${esc(p.name)} from roster">×</button></div>`).join("");
     }
-
-    function normalizePlayer(player) {
-      const positions = Array.isArray(player.positions) ? player.positions.slice(0, state.innings) : [];
-      while (positions.length < state.innings) positions.push("");
-      return {
-        id: player.id || uid(),
-        name: String(player.name || ""),
-        number: String(player.number || ""),
-        positions
-      };
-    }
-
-    function addPlayer(player = blankPlayer()) {
-      state.players.push(normalizePlayer(player));
-      render();
-      const lastName = refs.lineupBody.querySelector("tr:last-child input[data-field='name']");
-      if (lastName) lastName.focus();
-    }
-
-    function movePlayer(index, direction) {
-      const target = index + direction;
-      if (target < 0 || target >= state.players.length) return;
-      [state.players[index], state.players[target]] = [state.players[target], state.players[index]];
-      render();
-    }
-
-    function removePlayer(index) {
-      state.players.splice(index, 1);
-      render();
-    }
-
-    function setInnings(value) {
-      const next = Math.max(1, Math.min(30, Number(value) || 1));
-      state.innings = next;
-      refs.innings.value = next;
-      state.players = state.players.map(normalizePlayer);
-      render();
-    }
-
-    function optionsHtml(selected) {
-      return POSITIONS.map(pos => `<option value="${pos}" ${pos === selected ? "selected" : ""}>${pos || "—"}</option>`).join("");
-    }
-
+    function addRosterPlayer(name,gender) { const clean=name.trim(); if(!clean)return; state.roster.push({id:uid(),name:clean,gender}); saveRoster(); renderRoster(); refs.rosterName.value=""; refs.rosterName.focus(); showToast(`${clean} saved to the roster.`); }
+    function addRosterToLineup(index) { const member=state.roster[index]; if(!member||state.players.some(p=>p.rosterId===member.id))return; const player=normalizePlayer({id:uid(),rosterId:member.id,name:member.name,gender:member.gender,positions:[]}); player.rosterId=member.id; state.players.push(player); render(); showToast(`${member.name} added to this game.`); }
+    function removeRosterPlayer(index) { const member=state.roster[index]; if(!member||!confirm(`Remove ${member.name} from the saved roster?`))return; state.roster.splice(index,1); saveRoster(); renderRoster(); }
+    function positionOptions(playerIndex,inning,selected) { const used=new Set(state.players.map((p,i)=>i===playerIndex?"":p.positions[inning]).filter(p=>p&&p!=="Bench")); return POSITIONS.map(pos=>`<option value="${pos}" ${pos===selected?"selected":""} ${used.has(pos)?"disabled":""}>${pos||"—"}${used.has(pos)?" (taken)":""}</option>`).join(""); }
     function render() {
-      refs.lineupHead.innerHTML = `
-        <tr>
-          <th>Order</th>
-          <th>Player</th>
-          <th>#</th>
-          ${Array.from({length: state.innings}, (_, i) => `<th>Inn ${i + 1}</th>`).join("")}
-          <th class="controls-heading no-print">Actions</th>
-        </tr>`;
-
-      if (!state.players.length) {
-        refs.lineupBody.innerHTML = `<tr><td colspan="${state.innings + 4}" class="empty-state">No players yet. Select “Add Player” to begin.</td></tr>`;
-        checkDuplicates();
-        return;
-      }
-
-      refs.lineupBody.innerHTML = state.players.map((player, index) => `
-        <tr data-id="${player.id}">
-          <td class="order-cell">${index + 1}</td>
-          <td class="player-cell"><input type="text" value="${escapeHtml(player.name)}" data-index="${index}" data-field="name" aria-label="Player ${index + 1} name" placeholder="Player name" /></td>
-          <td class="number-cell"><input type="text" value="${escapeHtml(player.number)}" data-index="${index}" data-field="number" aria-label="Player ${index + 1} number" placeholder="#" /></td>
-          ${player.positions.map((position, inning) => `
-            <td class="position-cell"><select data-index="${index}" data-inning="${inning}" aria-label="Player ${index + 1}, inning ${inning + 1} position">${optionsHtml(position)}</select></td>
-          `).join("")}
-          <td class="controls-cell no-print">
-            <button class="icon-btn" type="button" data-action="up" data-index="${index}" title="Move up" aria-label="Move player up">↑</button>
-            <button class="icon-btn" type="button" data-action="down" data-index="${index}" title="Move down" aria-label="Move player down">↓</button>
-            <button class="icon-btn delete" type="button" data-action="delete" data-index="${index}" title="Remove player" aria-label="Remove player">×</button>
-          </td>
-        </tr>
-      `).join("");
-      checkDuplicates();
+      refs.head.innerHTML=`<tr><th class="player-cell">Player</th><th>Gender</th>${Array.from({length:state.innings},(_,i)=>`<th>Inn ${i+1}</th>`).join("")}<th class="no-print">Game actions</th></tr>`;
+      if(!state.players.length) refs.body.innerHTML=`<tr><td colspan="${state.innings+3}" class="empty-state">No players yet. Tap “Add Player” to begin.</td></tr>`;
+      else refs.body.innerHTML=state.players.map((p,i)=>`<tr><td class="player-cell"><div class="player-wrap"><span class="order">${i+1}</span><input value="${esc(p.name)}" data-field="name" data-index="${i}" aria-label="Player ${i+1} name" placeholder="Player name"></div></td><td class="gender-cell"><select data-field="gender" data-index="${i}" aria-label="${esc(labelFor(p))} gender">${GENDERS.map(g=>`<option ${g===p.gender?"selected":""}>${g}</option>`).join("")}</select></td>${p.positions.map((pos,inn)=>`<td class="position-cell"><select data-inning="${inn}" data-index="${i}" aria-label="${esc(labelFor(p))}, inning ${inn+1} position">${positionOptions(i,inn,pos)}</select></td>`).join("")}<td class="controls-cell no-print"><button class="icon-btn kicked" data-action="kicked" data-id="${p.id}" title="Mark as last kicker">Kicked</button> <button class="icon-btn" data-action="up" data-index="${i}" aria-label="Move up">↑</button> <button class="icon-btn" data-action="down" data-index="${i}" aria-label="Move down">↓</button> <button class="icon-btn delete" data-action="delete" data-index="${i}" aria-label="Remove">×</button></td></tr>`).join("");
+      renderTracker();renderRoster();
     }
-
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
-    }
-
-    function checkDuplicates() {
-      const duplicateMessages = [];
-      for (let inning = 0; inning < state.innings; inning++) {
-        const counts = new Map();
-        state.players.forEach(p => {
-          const pos = p.positions[inning];
-          if (!pos || pos === "Bench" || pos === "EH") return;
-          counts.set(pos, (counts.get(pos) || 0) + 1);
-        });
-        const duplicates = [...counts.entries()].filter(([, count]) => count > 1).map(([pos]) => pos);
-        if (duplicates.length) duplicateMessages.push(`Inning ${inning + 1}: ${duplicates.join(", ")}`);
-      }
-      if (duplicateMessages.length) {
-        refs.warning.textContent = `Duplicate fielding positions found — ${duplicateMessages.join(" • ")}`;
-        refs.warning.classList.add("show");
-      } else {
-        refs.warning.classList.remove("show");
-        refs.warning.textContent = "";
-      }
-    }
-
-    function getPayload() {
-      return {
-        version: 1,
-        teamName: refs.teamName.value,
-        opponent: refs.opponent.value,
-        gameDate: refs.gameDate.value,
-        innings: state.innings,
-        players: state.players
-      };
-    }
-
-    function applyPayload(data) {
-      state.innings = Math.max(1, Math.min(30, Number(data.innings) || 7));
-      refs.innings.value = state.innings;
-      refs.teamName.value = data.teamName || "";
-      refs.opponent.value = data.opponent || "";
-      refs.gameDate.value = data.gameDate || "";
-      state.players = Array.isArray(data.players) ? data.players.map(normalizePlayer) : [];
-      render();
-    }
-
-    function saveLocal() {
-      localStorage.setItem("baseballLineupGenerator", JSON.stringify(getPayload()));
-      showToast("Lineup saved on this device.");
-    }
-
-    function loadLocal() {
-      const saved = localStorage.getItem("baseballLineupGenerator");
-      if (!saved) return showToast("No saved lineup found.");
-      try {
-        applyPayload(JSON.parse(saved));
-        showToast("Saved lineup loaded.");
-      } catch {
-        showToast("The saved lineup could not be read.");
-      }
-    }
-
-    function clearAll() {
-      if (!confirm("Clear the entire lineup?")) return;
-      refs.teamName.value = "";
-      refs.opponent.value = "";
-      refs.gameDate.value = "";
-      state.innings = 7;
-      refs.innings.value = 7;
-      state.players = [];
-      render();
-    }
-
-    function exportJson() {
-      const blob = new Blob([JSON.stringify(getPayload(), null, 2)], {type: "application/json"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const team = (refs.teamName.value || "baseball-lineup").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
-      a.href = url;
-      a.download = `${team || "baseball-lineup"}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function importJson(file) {
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          applyPayload(JSON.parse(reader.result));
-          showToast("Lineup imported.");
-        } catch {
-          showToast("That file is not a valid lineup backup.");
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function preparePrint() {
-      $("printTitle").textContent = refs.teamName.value ? `${refs.teamName.value} Lineup` : "Baseball Lineup";
-      $("printOpponent").textContent = refs.opponent.value ? `Opponent: ${refs.opponent.value}` : "";
-      $("printDate").textContent = refs.gameDate.value ? `Date: ${new Date(refs.gameDate.value + "T12:00:00").toLocaleDateString()}` : "";
-      window.print();
-    }
-
-    let toastTimer;
-    function showToast(message) {
-      refs.toast.textContent = message;
-      refs.toast.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => refs.toast.classList.remove("show"), 2300);
-    }
-
-    refs.lineupBody.addEventListener("input", (event) => {
-      const input = event.target.closest("input[data-field]");
-      if (!input) return;
-      state.players[Number(input.dataset.index)][input.dataset.field] = input.value;
-    });
-
-    refs.lineupBody.addEventListener("change", (event) => {
-      const select = event.target.closest("select[data-inning]");
-      if (!select) return;
-      state.players[Number(select.dataset.index)].positions[Number(select.dataset.inning)] = select.value;
-      checkDuplicates();
-    });
-
-    refs.lineupBody.addEventListener("click", (event) => {
-      const button = event.target.closest("button[data-action]");
-      if (!button) return;
-      const index = Number(button.dataset.index);
-      if (button.dataset.action === "up") movePlayer(index, -1);
-      if (button.dataset.action === "down") movePlayer(index, 1);
-      if (button.dataset.action === "delete") removePlayer(index);
-    });
-
-    $("addPlayerBtn").addEventListener("click", () => addPlayer());
-    refs.innings.addEventListener("change", e => setInnings(e.target.value));
-    $("saveBtn").addEventListener("click", saveLocal);
-    $("loadBtn").addEventListener("click", loadLocal);
-    $("printBtn").addEventListener("click", preparePrint);
-    $("clearBtn").addEventListener("click", clearAll);
-    $("exportBtn").addEventListener("click", exportJson);
-    $("importFile").addEventListener("change", e => { importJson(e.target.files[0]); e.target.value = ""; });
-
-    // Start with nine editable rows while still allowing any number of players.
-    state.players = Array.from({length: 9}, blankPlayer);
-    refs.gameDate.value = new Date().toISOString().slice(0, 10);
-    render();
+    function addPlayer(){state.players.push(normalizePlayer(blankPlayer()));render();refs.body.querySelector("tr:last-child input")?.focus();}
+    function movePlayer(i,d){const t=i+d;if(t<0||t>=state.players.length)return;[state.players[i],state.players[t]]=[state.players[t],state.players[i]];render();}
+    function removePlayer(i){const [p]=state.players.splice(i,1);if(p&&state.lastKicker[p.gender]===p.id)state.lastKicker[p.gender]=null;render();}
+    function setInnings(value){state.innings=Math.max(1,Math.min(30,Number(value)||1));refs.innings.value=state.innings;state.players=state.players.map(normalizePlayer);render();}
+    function payload(){return {version:2,teamName:refs.teamName.value,opponent:refs.opponent.value,gameDate:refs.gameDate.value,innings:state.innings,players:state.players,lastKicker:state.lastKicker,lastGender:state.lastGender};}
+    function apply(data){state.innings=Math.max(1,Math.min(30,Number(data.innings)||7));refs.innings.value=state.innings;refs.teamName.value=data.teamName||"";refs.opponent.value=data.opponent||"";refs.gameDate.value=data.gameDate||"";state.players=Array.isArray(data.players)?data.players.map(normalizePlayer):[];state.lastKicker={Female:data.lastKicker?.Female||null,Male:data.lastKicker?.Male||null};state.lastGender=GENDERS.includes(data.lastGender)?data.lastGender:null;render();}
+    let toastTimer;function showToast(msg){refs.toast.textContent=msg;refs.toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>refs.toast.classList.remove("show"),2200);}
+    function save(){localStorage.setItem("kickballGameDay",JSON.stringify(payload()));showToast("Game saved on this device.");}
+    function load(){const saved=localStorage.getItem("kickballGameDay")||localStorage.getItem("baseballLineupGenerator");if(!saved)return showToast("No saved lineup found.");try{apply(JSON.parse(saved));showToast("Saved game loaded.");}catch{showToast("The saved lineup could not be read.");}}
+    function clearAll(){if(!confirm("Clear the entire game and kicking progress?"))return;refs.teamName.value=refs.opponent.value="";refs.gameDate.value=new Date().toISOString().slice(0,10);state.innings=7;refs.innings.value=7;state.players=[];state.lastKicker={Female:null,Male:null};state.lastGender=null;render();}
+    function exportJson(){const blob=new Blob([JSON.stringify(payload(),null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${(refs.teamName.value||"kickball-lineup").trim().replace(/[^a-z0-9]+/gi,"-").toLowerCase()}.json`;a.click();URL.revokeObjectURL(a.href);}
+    function importJson(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{apply(JSON.parse(reader.result));showToast("Lineup imported.");}catch{showToast("That is not a valid lineup backup.");}};reader.readAsText(file);}
+    refs.body.addEventListener("input",e=>{const input=e.target.closest('input[data-field="name"]');if(!input)return;state.players[+input.dataset.index].name=input.value;renderTracker();});
+    refs.body.addEventListener("change",e=>{const field=e.target.closest("select[data-field]");if(field){const p=state.players[+field.dataset.index];const old=p.gender;p.gender=field.value;if(state.lastKicker[old]===p.id)state.lastKicker[old]=null;render();return;}const pos=e.target.closest("select[data-inning]");if(pos){state.players[+pos.dataset.index].positions[+pos.dataset.inning]=pos.value;render();}});
+    refs.body.addEventListener("click",e=>{const b=e.target.closest("button[data-action]");if(!b)return;if(b.dataset.action==="kicked")markKicked(b.dataset.id);if(b.dataset.action==="up")movePlayer(+b.dataset.index,-1);if(b.dataset.action==="down")movePlayer(+b.dataset.index,1);if(b.dataset.action==="delete")removePlayer(+b.dataset.index);});
+    refs.genderTrackers.addEventListener("change",e=>{const s=e.target.closest("select[data-last-gender]");if(!s)return;state.lastKicker[s.dataset.lastGender]=s.value||null;if(s.value)state.lastGender=s.dataset.lastGender;renderTracker();});
+    $("rosterForm").addEventListener("submit",e=>{e.preventDefault();addRosterPlayer(refs.rosterName.value,refs.rosterGender.value);});
+    refs.rosterList.addEventListener("click",e=>{const b=e.target.closest("button[data-roster-action]");if(!b)return;const i=+b.dataset.rosterIndex;if(b.dataset.rosterAction==="add")addRosterToLineup(i);if(b.dataset.rosterAction==="delete")removeRosterPlayer(i);});
+    $("addPlayerBtn").addEventListener("click",addPlayer);refs.innings.addEventListener("change",e=>setInnings(e.target.value));$("saveBtn").addEventListener("click",save);$("loadBtn").addEventListener("click",load);$("clearBtn").addEventListener("click",clearAll);$("printBtn").addEventListener("click",()=>{$("printTitle").textContent=`${refs.teamName.value||"Kickball"} Lineup`;$('printMeta').textContent=[refs.opponent.value&&`vs. ${refs.opponent.value}`,refs.gameDate.value].filter(Boolean).join(" • ");window.print();});$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
+    loadRoster();refs.gameDate.value=new Date().toISOString().slice(0,10);render();
   </script>
 </body>
 </html>
