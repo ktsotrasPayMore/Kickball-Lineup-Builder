@@ -10,18 +10,21 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Multiple named team rosters, saved automatically in the browser
 - An explicit team-editing mode for renaming teams and adding or removing roster members
 - Rosters stay alphabetized by player name and are attached to their selected team
-- Add saved roster members to a game lineup with one tap
+- Add saved roster members to a game lineup with one tap outside team-editing mode
 - Roster player names remain linked and read-only in lineups, while game-day substitute names can be entered freely
 - Multiple saved lineups per team for doubleheaders and other multi-game days
 - New games inherit the previous game's kicking order while starting with blank fielding assignments
 - Add a female or male sub for the current game without saving them to the permanent roster
+- Keep game-day substitutes in a separate section below the roster, with their own playable-position choices
 - One current-kicker control that alternates genders while rotating each gender independently, even when gender counts are uneven
 - Current-inning control above the current kicker within the lineup
 - Locked lineups start with the first player as current kicker and hide completed innings as the current inning advances
 - Nine innings by default, with support for adjusting the game length
 - Inning-by-inning assignments for the nine standard baseball positions, **Rover**, and **Bench**
 - Choose every position each roster member can play, then autogenerate valid inning-by-inning defense with scarce-position players assigned first
-- Automatically balanced bench rotations when more than 10 players are in the lineup; lineups of 10 or fewer never bench a player
+- Automatically balanced bench rotations when the lineup exceeds the available fielding spots or the five-male limit
+- Field no more than five male players per inning while using every available male player when there are fewer than five
+- Prefer substitutes for extra bench time while continuing to rotate the rest of the lineup
 - Positions already assigned in an inning are disabled for every other player
 - Sticky player-name column and table header for easier phone use
 - Reorder and remove players
