@@ -1,6 +1,8 @@
 # Kickball Game Day
 
-A dependency-free, phone-friendly kickball lineup and live kicking-order tracker built for GitHub Pages.
+A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding planner built for GitHub Pages.
+
+**Website:** [https://ktsotraspaymore.github.io/Kickball-Lineup-Builder/](https://ktsotraspaymore.github.io/Kickball-Lineup-Builder/)
 
 ## Features
 
@@ -8,15 +10,15 @@ A dependency-free, phone-friendly kickball lineup and live kicking-order tracker
 - Persistent team roster with player names and genders, saved automatically in the browser
 - Add saved roster members to a game lineup with one tap
 - Add a female or male sub for the current game without saving them to the permanent roster
-- Live **Due up next** display with last-kicker controls for tracking at-bats
-- Separate male and female kicking orders when their player counts differ, with optional next-kicker markers
-- Independent last-kicker controls for each gender
+- Next-kicker and current-inning controls within the lineup when gender counts are even
+- A compact next-kicker control for each gender when player counts are uneven
+- Nine innings by default, with support for adjusting the game length
 - Inning-by-inning assignments for the nine standard baseball positions, **Rover**, and **Bench**
 - Positions already assigned in an inning are disabled for every other player
 - Sticky player-name column and table header for easier phone use
 - Reorder and remove players
 - Browser save/load and JSON import/export
-- Print or save as PDF
+- Print or save a landscape PDF containing only the lineup and fielding assignments
 
 ## Publish with GitHub Pages
 
