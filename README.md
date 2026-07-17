@@ -16,7 +16,7 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - New games inherit the previous game's kicking order while starting with blank fielding assignments
 - Save named female or male substitutes with a team while editing its roster
 - Keep substitutes in a separate section with playable-position choices and add them to a game lineup with one tap
-- One current-kicker control that alternates genders while rotating each gender independently, even when gender counts are uneven
+- Current, on-deck, and in-the-hole kicker status that alternates genders while rotating each gender independently, even when gender counts are uneven
 - Current-inning control above the current kicker within the lineup
 - Locked lineups start with the first player as current kicker and hide completed innings as the current inning advances
 - Nine innings by default, with support for adjusting the game length
@@ -31,7 +31,7 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Lock the completed lineup to replace editing controls with easy-to-read text until it is unlocked
 - Browser save/load and JSON import/export for all teams and lineups
 - Print or save a landscape PDF containing only the lineup and fielding assignments
-- Share a live, read-only lineup link; viewers see current-inning, current-kicker, and fielding updates without receiving a new link (the sharing page must remain open)
+- Share a live co-captain link for two-way roster, lineup, current-inning, and kicking-progress edits (the sharing page must remain open)
 
 ## Publish with GitHub Pages
 
@@ -40,4 +40,4 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 3. Under **Build and deployment**, select **Deploy from a branch**.
 4. Select the `main` branch and `/ (root)`, then save.
 
-No build step, framework, package manager, or application server is required. Live lineup sharing loads PeerJS from jsDelivr and uses its public signaling service to connect the sharing browser directly to viewers.
+No build step, framework, package manager, or application server is required. Live co-captain sharing loads PeerJS from jsDelivr and uses its public signaling service to connect both browsers directly.
