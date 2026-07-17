@@ -10,12 +10,12 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Multiple named team rosters, saved automatically in the browser
 - An explicit team-editing mode for renaming teams and adding or removing roster members
 - Rosters stay alphabetized by player name and are attached to their selected team
-- Add saved roster members to a game lineup with one tap outside team-editing mode
+- Add or remove saved roster members from a game lineup with one tap outside team-editing mode
 - Roster and substitute player names remain linked and read-only after they are added to a lineup
 - Multiple saved lineups per team for doubleheaders and other multi-game days
 - New games inherit the previous game's kicking order while starting with blank fielding assignments
 - Save named female or male substitutes with a team while editing its roster
-- Keep substitutes in a separate section with playable-position choices and add them to a game lineup with one tap
+- Keep substitutes in a separate section with playable-position choices and add or remove them from a game lineup with one tap
 - Current, on-deck, and in-the-hole kicker status that alternates genders while rotating each gender independently, even when gender counts are uneven
 - Current-inning control above the current kicker within the lineup
 - Locked lineups start with the first player as current kicker and hide completed innings as the current inning advances
@@ -31,7 +31,7 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Lock the completed lineup to replace editing controls with easy-to-read text until it is unlocked
 - Browser save/load and JSON import/export for all teams and lineups
 - Print or save a landscape PDF containing only the lineup and fielding assignments
-- Share a live co-captain link for two-way roster, lineup, current-inning, and kicking-progress edits (the sharing page must remain open)
+- Share a read-only live lineup link with the team or a separate co-captain link for full two-way roster, lineup, game, current-inning, and kicking-progress edits (the owner’s sharing page must remain open)
 
 ## Publish with GitHub Pages
 
