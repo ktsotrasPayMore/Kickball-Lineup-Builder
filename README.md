@@ -10,13 +10,14 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Persistent team roster with player names and genders, saved automatically in the browser
 - Add saved roster members to a game lineup with one tap
 - Add a female or male sub for the current game without saving them to the permanent roster
-- Next-kicker and current-inning controls within the lineup when gender counts are even
-- A compact next-kicker control for each gender when player counts are uneven
+- One next-kicker control that alternates genders while rotating each gender independently, even when gender counts are uneven
+- Current-inning control above the next kicker within the lineup
 - Nine innings by default, with support for adjusting the game length
 - Inning-by-inning assignments for the nine standard baseball positions, **Rover**, and **Bench**
 - Positions already assigned in an inning are disabled for every other player
 - Sticky player-name column and table header for easier phone use
 - Reorder and remove players
+- Lock the completed lineup to replace editing controls with easy-to-read text until it is unlocked
 - Browser save/load and JSON import/export
 - Print or save a landscape PDF containing only the lineup and fielding assignments
 
