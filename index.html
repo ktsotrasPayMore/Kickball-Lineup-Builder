@@ -28,11 +28,12 @@
     input,select { width:100%; border:1px solid #b7c8d6; border-radius:9px; padding:10px; background:#fff; color:var(--ink); outline:none; }
     input:focus,select:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(23,105,170,.13); }
     .actions { display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
-    .toolbar .actions { margin-left:0; }
+    .toolbar>.actions { margin-left:auto; }
     .sub-actions select { width:auto; }
     .team-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:end; }
     .lineup-controls { display:grid; grid-template-columns:minmax(150px,1fr) minmax(150px,1fr) 92px auto auto; gap:8px; align-items:end; flex:1 1 680px; }
     .lineup-controls .field { min-width:0; }
+    .saved-date-note { color:var(--green); font-size:.72rem; font-weight:800; }
     .team-controls .field { min-width:180px; }
     .team-controls select { min-width:180px; }
     .team-controls.is-editing #teamSelectField { display:none; }
@@ -120,7 +121,8 @@
     .version { display:block; margin-top:4px; font-size:.75rem; }
     .toast { position:fixed; right:16px; bottom:16px; z-index:20; background:var(--navy); color:#fff; padding:11px 14px; border-radius:9px; box-shadow:var(--shadow); opacity:0; transform:translateY(10px); pointer-events:none; transition:.2s; }
     .toast.show { opacity:1; transform:none; }
-    .help-modal { width:min(720px,calc(100% - 28px)); max-height:calc(100dvh - 28px); padding:0; border:0; border-radius:16px; color:var(--ink); box-shadow:0 24px 70px rgba(18,38,58,.28); }
+    body.help-open { overflow:hidden; }
+    .help-modal { width:min(720px,calc(100% - 28px)); max-height:calc(100dvh - 28px); padding:0; border:0; border-radius:16px; color:var(--ink); box-shadow:0 24px 70px rgba(18,38,58,.28); overflow-y:auto; overscroll-behavior:contain; }
     .help-modal::backdrop { background:rgba(10,26,40,.62); backdrop-filter:blur(2px); }
     .help-modal-head { position:sticky; top:0; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:17px 20px; border-bottom:1px solid var(--line); background:var(--blue2); }
     .help-modal-head h2 { margin:0; color:var(--navy); }
@@ -134,7 +136,10 @@
     body.shared-view .owner-only { display:none!important; }
     body.shared-view main { margin-top:-48px; }
     body.shared-view .content { padding-top:20px; }
-    body.shared-view .lineup-controls { grid-template-columns:minmax(150px,220px) minmax(150px,220px); flex-basis:auto; }
+    body.shared-view .toolbar { justify-content:space-between; }
+    body.shared-view .toolbar>.actions { margin-left:auto; }
+    body.shared-view .lineup-section-head>div:first-child { flex-basis:100%; }
+    body.shared-view .lineup-controls { flex:1 1 100%; width:100%; }
     body.read-only-view .edit-only { display:none!important; }
     body.read-only-view .kicking-progress button { display:none!important; }
     @media(max-width:700px) {
@@ -201,7 +206,8 @@
   <main>
     <div class="app-shell">
       <section class="toolbar no-print" aria-label="Lineup actions">
-        <div class="actions"><button class="btn btn-ghost" id="helpBtn">How to Use</button><button class="btn btn-secondary owner-only" id="saveBtn">Save</button><button class="btn btn-ghost owner-only" id="loadBtn">Load</button><button class="btn btn-primary" id="printBtn">Print / PDF</button><button class="btn btn-secondary owner-only" id="shareLineupBtn">Share Lineup</button><button class="btn btn-primary owner-only" id="shareBtn">Share with Co-Captain</button></div>
+        <button class="btn btn-ghost" id="helpBtn">How to Use</button>
+        <div class="actions"><button class="btn btn-secondary owner-only" id="saveBtn">Save</button><button class="btn btn-ghost owner-only" id="loadBtn">Load</button><button class="btn btn-primary" id="printBtn">Print / PDF</button><button class="btn btn-secondary owner-only" id="shareLineupBtn">Share Lineup</button><button class="btn btn-primary owner-only" id="shareBtn">Share with Co-Captain</button></div>
       </section>
       <div class="content">
         <div class="print-header"><h2 id="printTitle">Kickball Lineup</h2><span id="printMeta"></span></div>
@@ -218,7 +224,7 @@
           </div>
         </section>
         <section class="section-card">
-          <div class="section-head no-print"><div><h2 class="section-title">Kicking Order & Fielding by Inning</h2><div class="section-note" id="lineupNote">Create separate lineups for doubleheaders. Roster player names stay linked and cannot be edited here.</div></div><div class="lineup-controls"><div class="field"><label for="lineupSelect">Game</label><select id="lineupSelect"></select></div><div class="field"><label for="gameDate">Game date</label><input id="gameDate" type="date"></div><div class="field small edit-only"><label for="innings">Innings</label><input id="innings" type="number" min="1" max="30" value="9"></div><button class="btn btn-secondary edit-only" id="addLineupBtn">+ Add Game</button><button class="btn btn-danger edit-only" id="deleteLineupBtn">Delete Game</button></div></div>
+          <div class="section-head lineup-section-head no-print"><div><h2 class="section-title">Kicking Order & Fielding by Inning</h2><div class="section-note" id="lineupNote">Create separate lineups for doubleheaders. Roster player names stay linked and cannot be edited here.</div></div><div class="lineup-controls"><div class="field"><label for="lineupSelect">Game</label><select id="lineupSelect"></select></div><div class="field"><label for="gameDate">Game date</label><input id="gameDate" type="date" list="lineupDates" aria-describedby="savedDateNote"><datalist id="lineupDates"></datalist><span class="saved-date-note" id="savedDateNote" hidden>Dates marked with a dot have a lineup.</span></div><div class="field small edit-only"><label for="innings">Innings</label><input id="innings" type="number" min="1" max="30" value="9"></div><button class="btn btn-secondary edit-only" id="addLineupBtn">+ Add Game</button><button class="btn btn-danger edit-only" id="deleteLineupBtn">Delete Game</button></div></div>
           <div class="kicking-progress no-print" id="evenProgress" hidden></div>
           <div class="table-wrap"><table id="lineupTable" aria-label="Kickball lineup"><thead id="lineupHead"></thead><tbody id="lineupBody"></tbody></table></div>
           <div class="lineup-lock no-print edit-only"><button class="btn btn-primary" id="lockLineupBtn">Lock Lineup</button><button class="btn btn-secondary" id="autoDefenseBtn">Autogenerate Defense</button><button class="btn btn-secondary" id="clearPositionsBtn">Clear Positions</button><button class="btn btn-danger" id="clearBtn">Delete Lineup</button></div>
@@ -226,7 +232,7 @@
         <section class="section-card no-print share-hidden"><div class="section-head"><div><h2 class="section-title">Lineup Backup</h2><div class="section-note">Download your lineup or transfer it to another device.</div></div><div class="actions"><button class="btn btn-secondary" id="exportBtn">Export JSON</button><label class="btn btn-ghost" for="importFile" style="text-transform:none;letter-spacing:0;font-size:inherit">Import JSON</label><input id="importFile" type="file" accept="application/json,.json" hidden></div></div></section>
       </div>
     </div>
-    <p class="footer-note">Your lineup stays in this browser unless you export it.<span class="version">Version 2.2.2</span></p>
+    <p class="footer-note"><span class="version">Version 2.2.2</span><span class="version">Created by Kevin Tsotras</span></p>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <dialog class="help-modal" id="helpModal" aria-labelledby="helpTitle">
@@ -258,7 +264,7 @@
     let livePeer = null;
     const liveConnections = new Set();
     const $ = id => document.getElementById(id);
-    const refs = { teamSelect:$("teamSelect"),teamNameEdit:$("teamNameEdit"),lineupSelect:$("lineupSelect"),gameDate:$("gameDate"),innings:$("innings"),head:$("lineupHead"),body:$("lineupBody"),rosterList:$("rosterList"),subPlayersSection:$("subPlayersSection"),subPlayersList:$("subPlayersList"),rosterName:$("rosterName"),rosterGender:$("rosterGender"),subName:$("subName"),subGender:$("subGender"),evenProgress:$("evenProgress"),lockLineupBtn:$("lockLineupBtn"),autoDefenseBtn:$("autoDefenseBtn"),toast:$("toast") };
+    const refs = { teamSelect:$("teamSelect"),teamNameEdit:$("teamNameEdit"),lineupSelect:$("lineupSelect"),gameDate:$("gameDate"),lineupDates:$("lineupDates"),savedDateNote:$("savedDateNote"),innings:$("innings"),head:$("lineupHead"),body:$("lineupBody"),rosterList:$("rosterList"),subPlayersSection:$("subPlayersSection"),subPlayersList:$("subPlayersList"),rosterName:$("rosterName"),rosterGender:$("rosterGender"),subName:$("subName"),subGender:$("subGender"),evenProgress:$("evenProgress"),lockLineupBtn:$("lockLineupBtn"),autoDefenseBtn:$("autoDefenseBtn"),toast:$("toast") };
     const team = () => state.teams.find(t=>t.id===state.activeTeamId) || state.teams[0];
     const game = () => { const t=team(); return t.lineups.find(l=>l.id===t.activeLineupId) || t.lineups[0]; };
     const gamesOnDate = (t,date) => t.lineups.filter(l=>l.gameDate===date);
@@ -303,7 +309,7 @@
       refs.subPlayersList.innerHTML=t.subs.length?t.subs.map((p,i)=>{const added=g.players.some(x=>x.subId===p.id),count=p.eligiblePositions.length;return `<div class="roster-player"><span class="roster-avatar">${esc(p.name.trim().charAt(0).toUpperCase()||"?")}</span><div class="roster-info"><strong>${esc(p.name)}</strong><span>${p.gender}${added?" · In this lineup":""}</span></div>${editingTeam?`<button class="icon-btn delete" data-sub-action="delete" data-sub-index="${i}" aria-label="Delete substitute ${esc(p.name)}">×</button><details class="position-picker"><summary>${count?`${count} playable position${count===1?"":"s"}`:"Choose playable positions"}</summary><div class="position-choices">${positionChoices(p,i,"sub")}</div></details>`:`<button class="icon-btn add" data-sub-action="${added?"remove":"add"}" data-sub-index="${i}" aria-label="${added?"Remove":"Add"} ${esc(p.name)} ${added?"from":"to"} lineup" ${g.lineupLocked?"disabled":""}>${added?"Added":"+ Lineup"}</button>`}</div>`;}).join(""):'<div class="empty-state">No substitute players saved for this team.</div>';
     }
     function positionOptions(playerIndex,inning,selected){const used=new Set(game().players.map((p,i)=>i===playerIndex?"":p.positions[inning]).filter(p=>p&&p!=="Bench"));return POSITIONS.map(pos=>`<option value="${pos}" ${pos===selected?"selected":""} ${used.has(pos)?"disabled":""}>${pos||"—"}${used.has(pos)?" (taken)":""}</option>`).join("");}
-    function syncInputs(){const t=team(),g=game(),datedGames=gamesOnDate(t,g.gameDate);refs.teamNameEdit.value=t.name;refs.gameDate.value=g.gameDate;refs.innings.value=g.innings;refs.teamSelect.innerHTML=state.teams.map(x=>`<option value="${x.id}" ${x.id===t.id?"selected":""}>${esc(x.name)}</option>`).join("");refs.lineupSelect.innerHTML=datedGames.map((x,i)=>`<option value="${x.id}" ${x.id===g.id?"selected":""}>${esc(x.name||`Game ${i+1}`)}</option>`).join("");}
+    function syncInputs(){const t=team(),g=game(),datedGames=gamesOnDate(t,g.gameDate),savedDates=[...new Set(t.lineups.filter(lineup=>lineup.players.length).map(lineup=>lineup.gameDate))].sort();refs.teamNameEdit.value=t.name;refs.gameDate.value=g.gameDate;refs.lineupDates.innerHTML=savedDates.map(date=>`<option value="${date}" label="● Lineup saved"></option>`).join("");refs.savedDateNote.hidden=!savedDates.length;refs.innings.value=g.innings;refs.teamSelect.innerHTML=state.teams.map(x=>`<option value="${x.id}" ${x.id===t.id?"selected":""}>${esc(x.name)}</option>`).join("");refs.lineupSelect.innerHTML=datedGames.map((x,i)=>`<option value="${x.id}" ${x.id===g.id?"selected":""}>${esc(x.name||`Game ${i+1}`)}</option>`).join("");}
     function render(){
       const g=game(),displayLocked=g.lineupLocked||readOnlyView,firstInning=g.lineupLocked?g.currentInning-1:0,visibleInnings=g.innings-firstInning;syncInputs();$("lineupTable").classList.toggle("is-locked",displayLocked);
       refs.head.innerHTML=`<tr><th class="player-cell">Player</th>${Array.from({length:visibleInnings},(_,i)=>`<th>Inn ${i+firstInning+1}</th>`).join("")}${displayLocked?"":'<th class="no-print">Game actions</th>'}</tr>`;
@@ -436,9 +442,10 @@
     refs.autoDefenseBtn.addEventListener("click",autogenerateDefense);
     $("newTeamBtn").addEventListener("click",addTeam);$("deleteTeamBtn").addEventListener("click",deleteTeam);$("addLineupBtn").addEventListener("click",addLineup);$("deleteLineupBtn").addEventListener("click",deleteLineup);refs.innings.addEventListener("change",e=>setInnings(e.target.value));
     const helpModal=$("helpModal");
-    $("helpBtn").addEventListener("click",()=>helpModal.showModal());
+    $("helpBtn").addEventListener("click",()=>{document.body.classList.add("help-open");helpModal.showModal();});
     $("closeHelpBtn").addEventListener("click",()=>helpModal.close());
     helpModal.addEventListener("click",e=>{if(e.target===helpModal)helpModal.close();});
+    helpModal.addEventListener("close",()=>document.body.classList.remove("help-open"));
     $("saveBtn").addEventListener("click",()=>{saveData();showToast("All teams and lineups saved.");});$("loadBtn").addEventListener("click",()=>{loadData();render();showToast("Saved teams loaded.");});$("clearPositionsBtn").addEventListener("click",clearPositions);$("clearBtn").addEventListener("click",clearLineup);$("printBtn").addEventListener("click",()=>{const title=`${team().name} - ${game().gameDate} - ${game().name}`;$("printTitle").textContent=`${team().name} — ${game().name}`;$("printMeta").textContent=[game().opponent&&`vs. ${game().opponent}`,game().gameDate].filter(Boolean).join(" • ");document.title=title;window.addEventListener("afterprint",()=>document.title="Kickball Game Day",{once:true});window.print();});$("shareLineupBtn").addEventListener("click",()=>copyShareLink("view"));$("shareBtn").addEventListener("click",()=>copyShareLink("edit"));$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
     if(!loadSharedLineup())loadData();render();
   </script>
