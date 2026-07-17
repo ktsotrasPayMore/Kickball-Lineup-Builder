@@ -6,7 +6,7 @@
   <meta name="description" content="A phone-friendly kickball lineup and inning-by-inning fielding planner.">
   <title>Kickball Game Day</title>
   <style>
-    :root { --navy:#12263a; --blue:#1769aa; --blue2:#e8f4fc; --green:#218653; --green2:#e9f7ef; --red:#bd3c43; --gold:#f4b942; --ink:#203447; --muted:#62778a; --line:#d6e1e9; --paper:#fff; --bg:#f3f7fa; --shadow:0 12px 35px rgba(18,38,58,.12); --sticky:188px; }
+    :root { --navy:#12263a; --blue:#1769aa; --blue2:#e8f4fc; --green:#218653; --green2:#e9f7ef; --red:#bd3c43; --gold:#f4b942; --ink:#203447; --muted:#62778a; --line:#d6e1e9; --paper:#fff; --bg:#f3f7fa; --shadow:0 12px 35px rgba(18,38,58,.12); --sticky:148px; }
     * { box-sizing:border-box; }
     [hidden] { display:none!important; }
     html { scroll-behavior:smooth; }
@@ -89,6 +89,8 @@
     th { position:sticky; top:0; z-index:4; background:#f7fafc; color:var(--navy); font-size:.74rem; text-transform:uppercase; letter-spacing:.045em; white-space:nowrap; }
     th:last-child,td:last-child { border-right:0; }
     tr:last-child td { border-bottom:0; }
+    #lineupBody tr:nth-child(even) td { background:#f0f2f4; }
+    #lineupBody tr:not(:last-child) td { border-bottom:2px solid #b9c8d3; }
     .player-cell { position:sticky; left:0; z-index:2; min-width:var(--sticky); width:var(--sticky); box-shadow:4px 0 7px rgba(18,38,58,.07); }
     th.player-cell { z-index:6; background:#edf5fa; }
     .player-wrap { display:flex; align-items:center; gap:7px; }
@@ -114,6 +116,7 @@
     .next-marker { margin-left:5px; font-size:.68rem; text-transform:uppercase; }
     .empty-state { text-align:center; color:var(--muted); padding:30px; }
     .footer-note { text-align:center; color:var(--muted); font-size:.83rem; }
+    .version { display:block; margin-top:4px; font-size:.75rem; }
     .toast { position:fixed; right:16px; bottom:16px; z-index:20; background:var(--navy); color:#fff; padding:11px 14px; border-radius:9px; box-shadow:var(--shadow); opacity:0; transform:translateY(10px); pointer-events:none; transition:.2s; }
     .toast.show { opacity:1; transform:none; }
     .print-header { display:none; }
@@ -125,7 +128,7 @@
     body.read-only-view .edit-only { display:none!important; }
     body.read-only-view .kicking-progress button { display:none!important; }
     @media(max-width:700px) {
-      :root { --sticky:154px; }
+      :root { --sticky:126px; }
       .site-header { padding:18px 16px 65px; }
       h1 { margin-top:19px; }
       main { padding:0 8px; }
@@ -160,12 +163,13 @@
     }
     @media print {
       @page { size:letter landscape; margin:.22in; }
+      * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       body { background:#fff; font-size:7pt; line-height:1.15; }
       .site-header,.toolbar,.no-print,.footer-note,.toast { display:none!important; }
       main { max-width:none; margin:0; padding:0; }
       .app-shell,.section-card { border:0; box-shadow:none; }
       .content { padding:0; gap:4px; }
-      .print-header { display:block; }
+      .print-header { display:block; text-align:center; }
       .print-header h2 { margin:0; }
       .kicking-progress,.gender-progress { padding:7px; }
       .table-wrap { overflow:visible; max-height:none; }
@@ -174,8 +178,8 @@
       table { table-layout:fixed; }
       th,td { padding:2px 3px; height:auto; }
       th { font-size:6.5pt; }
-      tbody tr:nth-child(odd) td { background:#fff; }
-      tbody tr:nth-child(even) td { background:#f0f2f4; }
+      #lineupBody tr:nth-child(odd) td { background:#fff; }
+      #lineupBody tr:nth-child(even) td { background:#e4e7ea; }
       .player-cell { width:1.35in; min-width:1.35in; }
       table.is-locked th:not(.player-cell),table.is-locked .position-cell,.position-cell { width:auto; min-width:0; }
       td input,td select { appearance:none; border:0; padding:0; box-shadow:none; }
@@ -212,7 +216,7 @@
         <section class="section-card no-print share-hidden"><div class="section-head"><div><h2 class="section-title">Lineup Backup</h2><div class="section-note">Download your lineup or transfer it to another device.</div></div><div class="actions"><button class="btn btn-secondary" id="exportBtn">Export JSON</button><label class="btn btn-ghost" for="importFile" style="text-transform:none;letter-spacing:0;font-size:inherit">Import JSON</label><input id="importFile" type="file" accept="application/json,.json" hidden></div></div></section>
       </div>
     </div>
-    <p class="footer-note">Your lineup stays in this browser unless you export it.</p>
+    <p class="footer-note">Your lineup stays in this browser unless you export it.<span class="version">Version 2.2.1</span></p>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
@@ -408,7 +412,7 @@
     refs.lockLineupBtn.addEventListener("click",()=>{const g=game(),locking=!g.lineupLocked;if(locking&&g.players.some(player=>player.positions.some(position=>!position)))return showToast("Assign every player a position for every inning before locking.");g.lineupLocked=locking;if(locking&&g.currentInning===1){g.lastKicker={Female:null,Male:null};g.lastGender=null;}saveData();render();showToast(locking?"Lineup locked.":"Lineup unlocked.");});
     refs.autoDefenseBtn.addEventListener("click",autogenerateDefense);
     $("newTeamBtn").addEventListener("click",addTeam);$("deleteTeamBtn").addEventListener("click",deleteTeam);$("addLineupBtn").addEventListener("click",addLineup);$("deleteLineupBtn").addEventListener("click",deleteLineup);refs.innings.addEventListener("change",e=>setInnings(e.target.value));
-    $("saveBtn").addEventListener("click",()=>{saveData();showToast("All teams and lineups saved.");});$("loadBtn").addEventListener("click",()=>{loadData();render();showToast("Saved teams loaded.");});$("clearPositionsBtn").addEventListener("click",clearPositions);$("clearBtn").addEventListener("click",clearLineup);$("printBtn").addEventListener("click",()=>{$("printTitle").textContent=`${team().name} — ${game().name}`;$("printMeta").textContent=[game().opponent&&`vs. ${game().opponent}`,game().gameDate].filter(Boolean).join(" • ");window.print();});$("shareLineupBtn").addEventListener("click",()=>copyShareLink("view"));$("shareBtn").addEventListener("click",()=>copyShareLink("edit"));$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
+    $("saveBtn").addEventListener("click",()=>{saveData();showToast("All teams and lineups saved.");});$("loadBtn").addEventListener("click",()=>{loadData();render();showToast("Saved teams loaded.");});$("clearPositionsBtn").addEventListener("click",clearPositions);$("clearBtn").addEventListener("click",clearLineup);$("printBtn").addEventListener("click",()=>{const title=`${team().name} - ${game().gameDate} - ${game().name}`;$("printTitle").textContent=`${team().name} — ${game().name}`;$("printMeta").textContent=[game().opponent&&`vs. ${game().opponent}`,game().gameDate].filter(Boolean).join(" • ");document.title=title;window.addEventListener("afterprint",()=>document.title="Kickball Game Day",{once:true});window.print();});$("shareLineupBtn").addEventListener("click",()=>copyShareLink("view"));$("shareBtn").addEventListener("click",()=>copyShareLink("edit"));$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
     if(!loadSharedLineup())loadData();render();
   </script>
 </body>
