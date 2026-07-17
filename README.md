@@ -7,8 +7,11 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 ## Features
 
 - Alternating female/male kicking rotation that supports unequal roster sizes
-- Persistent team roster with player names and genders, saved automatically in the browser
+- Multiple named team rosters, saved automatically in the browser
+- Rosters stay alphabetized by player name and are attached to their selected team
 - Add saved roster members to a game lineup with one tap
+- Roster player names remain linked and read-only in lineups, while game-day substitute names can be entered freely
+- Multiple saved lineups per team for doubleheaders and other multi-game days
 - Add a female or male sub for the current game without saving them to the permanent roster
 - One next-kicker control that alternates genders while rotating each gender independently, even when gender counts are uneven
 - Current-inning control above the next kicker within the lineup
@@ -18,7 +21,7 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Sticky player-name column and table header for easier phone use
 - Reorder and remove players
 - Lock the completed lineup to replace editing controls with easy-to-read text until it is unlocked
-- Browser save/load and JSON import/export
+- Browser save/load and JSON import/export for all teams and lineups
 - Print or save a landscape PDF containing only the lineup and fielding assignments
 
 ## Publish with GitHub Pages
