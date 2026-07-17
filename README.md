@@ -11,11 +11,11 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - An explicit team-editing mode for renaming teams and adding or removing roster members
 - Rosters stay alphabetized by player name and are attached to their selected team
 - Add saved roster members to a game lineup with one tap outside team-editing mode
-- Roster player names remain linked and read-only in lineups, while game-day substitute names can be entered freely
+- Roster and substitute player names remain linked and read-only after they are added to a lineup
 - Multiple saved lineups per team for doubleheaders and other multi-game days
 - New games inherit the previous game's kicking order while starting with blank fielding assignments
-- Add a female or male sub for the current game without saving them to the permanent roster
-- Keep game-day substitutes in a separate section below the roster, with their own playable-position choices
+- Save named female or male substitutes with a team while editing its roster
+- Keep substitutes in a separate section with playable-position choices and add them to a game lineup with one tap
 - One current-kicker control that alternates genders while rotating each gender independently, even when gender counts are uneven
 - Current-inning control above the current kicker within the lineup
 - Locked lineups start with the first player as current kicker and hide completed innings as the current inning advances
