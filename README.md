@@ -7,7 +7,9 @@ A dependency-free, phone-friendly kickball lineup and live kicking-order tracker
 - Alternating female/male kicking rotation that supports unequal roster sizes
 - Persistent team roster with player names and genders, saved automatically in the browser
 - Add saved roster members to a game lineup with one tap
-- Live **Due up next** display and one-tap **Kicked** controls
+- Add a female or male sub for the current game without saving them to the permanent roster
+- Live **Due up next** display with last-kicker controls for tracking at-bats
+- Separate male and female kicking orders when their player counts differ, with optional next-kicker markers
 - Independent last-kicker controls for each gender
 - Inning-by-inning assignments for the nine standard baseball positions, **Rover**, and **Bench**
 - Positions already assigned in an inning are disabled for every other player
