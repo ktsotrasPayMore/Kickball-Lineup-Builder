@@ -207,7 +207,7 @@
           <div class="section-head no-print"><div><h2 class="section-title">Kicking Order & Fielding by Inning</h2><div class="section-note" id="lineupNote">Create separate lineups for doubleheaders. Roster player names stay linked and cannot be edited here.</div></div><div class="lineup-controls"><div class="field"><label for="lineupSelect">Game</label><select id="lineupSelect"></select></div><div class="field"><label for="gameDate">Game date</label><input id="gameDate" type="date"></div><div class="field small edit-only"><label for="innings">Innings</label><input id="innings" type="number" min="1" max="30" value="9"></div><button class="btn btn-secondary edit-only" id="addLineupBtn">+ Add Game</button><button class="btn btn-danger edit-only" id="deleteLineupBtn">Delete Game</button></div></div>
           <div class="kicking-progress no-print" id="evenProgress" hidden></div>
           <div class="table-wrap"><table id="lineupTable" aria-label="Kickball lineup"><thead id="lineupHead"></thead><tbody id="lineupBody"></tbody></table></div>
-          <div class="lineup-lock no-print edit-only"><button class="btn btn-primary" id="lockLineupBtn">Lock Lineup</button><button class="btn btn-secondary" id="autoDefenseBtn">Autogenerate Defense</button><button class="btn btn-danger" id="clearBtn">Clear Lineup</button></div>
+          <div class="lineup-lock no-print edit-only"><button class="btn btn-primary" id="lockLineupBtn">Lock Lineup</button><button class="btn btn-secondary" id="autoDefenseBtn">Autogenerate Defense</button><button class="btn btn-secondary" id="clearPositionsBtn">Clear Positions</button><button class="btn btn-danger" id="clearBtn">Delete Lineup</button></div>
         </section>
         <section class="section-card no-print share-hidden"><div class="section-head"><div><h2 class="section-title">Lineup Backup</h2><div class="section-note">Download your lineup or transfer it to another device.</div></div><div class="actions"><button class="btn btn-secondary" id="exportBtn">Export JSON</button><label class="btn btn-ghost" for="importFile" style="text-transform:none;letter-spacing:0;font-size:inherit">Import JSON</label><input id="importFile" type="file" accept="application/json,.json" hidden></div></div></section>
       </div>
@@ -287,20 +287,22 @@
     function addRosterPlayer(name,gender){const clean=name.trim(),t=team();if(!editingTeam||!clean)return;if(t.roster.some(p=>p.name.localeCompare(clean,undefined,{sensitivity:"base"})===0))return showToast(`${clean} is already on this roster.`);t.roster.push({id:uid(),name:clean,gender,eligiblePositions:[]});t.roster.sort(alpha);saveData();render();refs.rosterName.value="";refs.rosterName.focus();showToast(`${clean} added to ${t.name}.`);}
     function addRosterToLineup(index){const t=team(),g=game(),member=t.roster[index];if(editingTeam||g.lineupLocked||!member||g.players.some(p=>p.rosterId===member.id))return;g.players.push(normalizePlayer({rosterId:member.id,name:member.name,gender:member.gender,eligiblePositions:member.eligiblePositions},g.innings));saveData();render();}
     function removeRosterFromLineup(index){const member=team().roster[index],playerIndex=game().players.findIndex(p=>p.rosterId===member?.id);if(playerIndex>=0)removePlayer(playerIndex);}
-    function removeRosterPlayer(index){const t=team(),member=t.roster[index];if(!editingTeam||!member||!confirm(`Remove ${member.name} from ${t.name}?`))return;t.roster.splice(index,1);saveData();render();}
+    function memberInLockedLineup(member,key){return team().lineups.some(lineup=>lineup.lineupLocked&&lineup.players.some(player=>player[key]===member.id));}
+    function removeRosterPlayer(index){const t=team(),member=t.roster[index];if(!editingTeam||!member)return;if(memberInLockedLineup(member,"rosterId"))return showToast(`Unlock the lineup before removing ${member.name}.`);if(!confirm(`Remove ${member.name} from ${t.name}?`))return;t.lineups.forEach(lineup=>lineup.players=lineup.players.filter(player=>player.rosterId!==member.id));t.roster.splice(index,1);saveData();render();}
     function addSub(name,gender){const clean=name.trim(),t=team();if(!editingTeam||!clean)return;if(t.subs.some(p=>p.name.localeCompare(clean,undefined,{sensitivity:"base"})===0))return showToast(`${clean} is already in the substitute list.`);t.subs.push({id:uid(),name:clean,gender,eligiblePositions:[]});t.subs.sort(alpha);saveData();render();refs.subName.value="";refs.subName.focus();showToast(`${clean} added as a substitute.`);}
     function addSubToLineup(index){const t=team(),g=game(),member=t.subs[index];if(editingTeam||g.lineupLocked||!member||g.players.some(p=>p.subId===member.id))return;g.players.push(normalizePlayer({subId:member.id,name:member.name,gender:member.gender,isSub:true,eligiblePositions:member.eligiblePositions},g.innings));saveData();render();}
     function removeSubFromLineup(index){const member=team().subs[index],playerIndex=game().players.findIndex(p=>p.subId===member?.id);if(playerIndex>=0)removePlayer(playerIndex);}
-    function removeSub(index){const t=team(),member=t.subs[index];if(!editingTeam||!member||!confirm(`Delete substitute ${member.name} from ${t.name}?`))return;t.subs.splice(index,1);saveData();render();}
+    function removeSub(index){const t=team(),member=t.subs[index];if(!editingTeam||!member)return;if(memberInLockedLineup(member,"subId"))return showToast(`Unlock the lineup before removing ${member.name}.`);if(!confirm(`Delete substitute ${member.name} from ${t.name}?`))return;t.lineups.forEach(lineup=>lineup.players=lineup.players.filter(player=>player.subId!==member.id));t.subs.splice(index,1);saveData();render();}
     function movePlayer(i,d){const g=game(),to=i+d;if(g.lineupLocked||to<0||to>=g.players.length)return;[g.players[i],g.players[to]]=[g.players[to],g.players[i]];saveData();render();}
     function removePlayer(i){const g=game();if(editingTeam||g.lineupLocked)return;const [p]=g.players.splice(i,1);if(p&&g.lastKicker[p.gender]===p.id)g.lastKicker[p.gender]=null;saveData();render();}
     function setInnings(value){const g=game();if(g.lineupLocked)return;g.innings=Math.max(1,Math.min(30,Number(value)||1));g.currentInning=Math.min(g.currentInning,g.innings);g.players=g.players.map(p=>normalizePlayer(p,g.innings));saveData();render();}
     const shuffled = values => { const copy=[...values]; for(let i=copy.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[copy[i],copy[j]]=[copy[j],copy[i]];} return copy; };
-    function assignDefense(players){
-      const assignments=new Map(),usedPlayers=new Set();
+    function assignDefense(players,fixed=new Map()){
+      const assignments=new Map(fixed),usedPlayers=new Set(fixed.keys()),usedFixedPositions=new Set(fixed.values());
       const required=players.length===9?FIELD_POSITIONS.filter(pos=>pos!=="Rover"):players.length>=10?[...FIELD_POSITIONS]:null;
       if(required){
-        const ordered=shuffled(required).sort((a,b)=>players.filter(p=>p.eligiblePositions.includes(a)).length-players.filter(p=>p.eligiblePositions.includes(b)).length);
+        if([...usedFixedPositions].some(pos=>!required.includes(pos))||usedFixedPositions.size!==fixed.size)return null;
+        const ordered=shuffled(required.filter(pos=>!usedFixedPositions.has(pos))).sort((a,b)=>players.filter(p=>!usedPlayers.has(p.id)&&p.eligiblePositions.includes(a)).length-players.filter(p=>!usedPlayers.has(p.id)&&p.eligiblePositions.includes(b)).length);
         function fillPosition(index){
           if(index===ordered.length)return true;
           const position=ordered[index],candidates=shuffled(players.filter(p=>!usedPlayers.has(p.id)&&p.eligiblePositions.includes(position))).sort((a,b)=>a.eligiblePositions.length-b.eligiblePositions.length);
@@ -309,7 +311,8 @@
         }
         return fillPosition(0)?assignments:null;
       }
-      const ordered=shuffled(players).sort((a,b)=>a.eligiblePositions.length-b.eligiblePositions.length),usedPositions=new Set();
+      if(usedFixedPositions.size!==fixed.size)return null;
+      const ordered=shuffled(players.filter(p=>!usedPlayers.has(p.id))).sort((a,b)=>a.eligiblePositions.length-b.eligiblePositions.length),usedPositions=new Set(usedFixedPositions);
       function fillPlayer(index){
         if(index===ordered.length)return true;
         const player=ordered[index],choices=shuffled(player.eligiblePositions).filter(pos=>!usedPositions.has(pos));
@@ -324,10 +327,16 @@
       for(let scheduleAttempt=0;scheduleAttempt<80;scheduleAttempt++){
         const schedule=[],sits=new Map(players.map(p=>[p.id,0]));
         for(let inning=0;inning<innings;inning++){
+          const fixedBench=players.filter(p=>p.positions[inning]==="Bench"),fixedAssignments=new Map(players.filter(p=>FIELD_POSITIONS.includes(p.positions[inning])).map(p=>[p.id,p.positions[inning]]));
+          const fixedMaleBench=fixedBench.filter(p=>p.gender==="Male").length,fixedFemaleBench=fixedBench.length-fixedMaleBench;
+          if(fixedMaleBench>maleBenchCount||fixedFemaleBench>femaleBenchCount){schedule.length=0;break;}
           let inningPlan=null;
           for(let attempt=0;attempt<500&&!inningPlan;attempt++){
-            const choose=(gender,count)=>shuffled(players.filter(p=>p.gender===gender)).sort((a,b)=>(sits.get(a.id)-(a.isSub ? .8 : 0)+Math.random()*.65)-(sits.get(b.id)-(b.isSub ? .8 : 0)+Math.random()*.65)).slice(0,count);
-            const benchPlayers=[...choose("Male",maleBenchCount),...choose("Female",femaleBenchCount)],benched=new Set(benchPlayers.map(p=>p.id)),active=players.filter(p=>!benched.has(p.id)),assignments=assignDefense(active);
+            const fixedBenchIds=new Set(fixedBench.map(p=>p.id)),fixedFieldIds=new Set(fixedAssignments.keys());
+            const choose=(gender,count)=>shuffled(players.filter(p=>p.gender===gender&&!fixedBenchIds.has(p.id)&&!fixedFieldIds.has(p.id))).sort((a,b)=>(sits.get(a.id)-(a.isSub ? .8 : 0)+Math.random()*.65)-(sits.get(b.id)-(b.isSub ? .8 : 0)+Math.random()*.65)).slice(0,count);
+            const benchPlayers=[...fixedBench,...choose("Male",maleBenchCount-fixedMaleBench),...choose("Female",femaleBenchCount-fixedFemaleBench)];
+            if(benchPlayers.length!==benchCount)continue;
+            const benched=new Set(benchPlayers.map(p=>p.id)),active=players.filter(p=>!benched.has(p.id)),assignments=assignDefense(active,fixedAssignments);
             if(assignments)inningPlan={benched,assignments,benchPlayers};
           }
           if(!inningPlan)break;
@@ -344,7 +353,7 @@
       if(missing.length)return showToast(`Choose playable positions for ${labelFor(missing[0])} first.`);
       const schedule=buildDefenseSchedule(g.players,g.innings);
       if(!schedule)return showToast("These position choices cannot fill a unique spot for every fielding player.");
-      schedule.forEach((inning,index)=>g.players.forEach(player=>{player.positions[index]=inning.benched.has(player.id)?"Bench":inning.assignments.get(player.id);}));
+      schedule.forEach((inning,index)=>g.players.forEach(player=>{if(!player.positions[index])player.positions[index]=inning.benched.has(player.id)?"Bench":inning.assignments.get(player.id);}));
       const hasBench=schedule.some(inning=>inning.benched.size);saveData();render();showToast(hasBench?"Defense generated with gender-aware bench time.":"Defense generated — nobody is benched.");
     }
     function updateRosterPosition(index,position,checked){
@@ -368,7 +377,8 @@
     function deleteTeam(){const t=team();if(!editingTeam||!confirm(`Delete ${t.name} and all of its lineups?`))return;state.teams=state.teams.filter(x=>x.id!==t.id);if(!state.teams.length)state.teams.push(normalizeTeam({name:"New Team"}));state.activeTeamId=state.teams[0].id;saveData();render();}
     function addLineup(){const t=team(),previous=game(),l=newLineup(nextGameNumber(t,previous.gameDate));l.gameDate=previous.gameDate;l.innings=previous.innings;l.players=previous.players.map(p=>normalizePlayer({rosterId:p.rosterId,subId:p.subId,name:p.name,gender:p.gender,isSub:p.isSub,eligiblePositions:p.eligiblePositions},l.innings));t.lineups.push(l);t.activeLineupId=l.id;saveData();render();showToast(`${l.name} created with the previous kicking order.`);}
     function deleteLineup(){const t=team(),g=game(),date=g.gameDate;if(!confirm(`Delete ${g.name}?`))return;t.lineups=t.lineups.filter(x=>x.id!==g.id);const remaining=gamesOnDate(t,date);if(remaining.length)t.activeLineupId=remaining[0].id;else{const blank=newLineup(1);blank.gameDate=date;t.lineups.push(blank);t.activeLineupId=blank.id;}saveData();render();}
-    function clearLineup(){if(!confirm("Clear this lineup and its kicking progress?"))return;const t=team(),g=game(),replacement=newLineup(1);replacement.id=g.id;replacement.name=g.name;replacement.gameDate=g.gameDate;t.lineups[t.lineups.indexOf(g)]=replacement;saveData();render();}
+    function clearLineup(){if(!confirm("Delete this lineup and its kicking progress?"))return;const t=team(),g=game(),replacement=newLineup(1);replacement.id=g.id;replacement.name=g.name;replacement.gameDate=g.gameDate;t.lineups[t.lineups.indexOf(g)]=replacement;saveData();render();}
+    function clearPositions(){const g=game();if(g.lineupLocked)return;if(!confirm("Clear every fielding position while keeping this lineup?"))return;g.players.forEach(player=>player.positions=Array(g.innings).fill(""));saveData();render();showToast("All fielding positions cleared.");}
     function payload(){return {version:8,activeTeamId:state.activeTeamId,teams:state.teams};}
     function sharedPayload(){return {version:8,team:team()};}
     function broadcastLiveLineup(){if(!state.teams.length)return;const data=sharedPayload();liveConnections.forEach(connection=>{if(connection.open)connection.send(data);});}
@@ -395,10 +405,10 @@
     $("editTeamBtn").addEventListener("click",()=>{editingTeam=!editingTeam;render();if(editingTeam)refs.teamNameEdit.focus();});
     refs.teamNameEdit.addEventListener("input",e=>{const name=e.target.value.trimStart();team().name=name||"Untitled Team";saveData();refs.teamSelect.options[refs.teamSelect.selectedIndex].textContent=team().name;});
     refs.gameDate.addEventListener("change",e=>{const t=team(),date=e.target.value;if(!date)return;const existing=gamesOnDate(t,date);if(existing.length)t.activeLineupId=existing[0].id;else{const blank=newLineup(1);blank.gameDate=date;t.lineups.push(blank);t.activeLineupId=blank.id;}saveData();render();});
-    refs.lockLineupBtn.addEventListener("click",()=>{const g=game(),locking=!g.lineupLocked;g.lineupLocked=locking;if(locking&&g.currentInning===1){g.lastKicker={Female:null,Male:null};g.lastGender=null;}saveData();render();showToast(locking?"Lineup locked.":"Lineup unlocked.");});
+    refs.lockLineupBtn.addEventListener("click",()=>{const g=game(),locking=!g.lineupLocked;if(locking&&g.players.some(player=>player.positions.some(position=>!position)))return showToast("Assign every player a position for every inning before locking.");g.lineupLocked=locking;if(locking&&g.currentInning===1){g.lastKicker={Female:null,Male:null};g.lastGender=null;}saveData();render();showToast(locking?"Lineup locked.":"Lineup unlocked.");});
     refs.autoDefenseBtn.addEventListener("click",autogenerateDefense);
     $("newTeamBtn").addEventListener("click",addTeam);$("deleteTeamBtn").addEventListener("click",deleteTeam);$("addLineupBtn").addEventListener("click",addLineup);$("deleteLineupBtn").addEventListener("click",deleteLineup);refs.innings.addEventListener("change",e=>setInnings(e.target.value));
-    $("saveBtn").addEventListener("click",()=>{saveData();showToast("All teams and lineups saved.");});$("loadBtn").addEventListener("click",()=>{loadData();render();showToast("Saved teams loaded.");});$("clearBtn").addEventListener("click",clearLineup);$("printBtn").addEventListener("click",()=>{$("printTitle").textContent=`${team().name} — ${game().name}`;$("printMeta").textContent=[game().opponent&&`vs. ${game().opponent}`,game().gameDate].filter(Boolean).join(" • ");window.print();});$("shareLineupBtn").addEventListener("click",()=>copyShareLink("view"));$("shareBtn").addEventListener("click",()=>copyShareLink("edit"));$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
+    $("saveBtn").addEventListener("click",()=>{saveData();showToast("All teams and lineups saved.");});$("loadBtn").addEventListener("click",()=>{loadData();render();showToast("Saved teams loaded.");});$("clearPositionsBtn").addEventListener("click",clearPositions);$("clearBtn").addEventListener("click",clearLineup);$("printBtn").addEventListener("click",()=>{$("printTitle").textContent=`${team().name} — ${game().name}`;$("printMeta").textContent=[game().opponent&&`vs. ${game().opponent}`,game().gameDate].filter(Boolean).join(" • ");window.print();});$("shareLineupBtn").addEventListener("click",()=>copyShareLink("view"));$("shareBtn").addEventListener("click",()=>copyShareLink("edit"));$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
     if(!loadSharedLineup())loadData();render();
   </script>
 </body>
