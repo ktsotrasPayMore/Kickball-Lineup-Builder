@@ -28,6 +28,7 @@
     input,select { width:100%; border:1px solid #b7c8d6; border-radius:9px; padding:10px; background:#fff; color:var(--ink); outline:none; }
     input:focus,select:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(23,105,170,.13); }
     .actions { display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
+    .toolbar .actions { margin-left:0; }
     .sub-actions select { width:auto; }
     .team-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:end; }
     .lineup-controls { display:grid; grid-template-columns:minmax(150px,1fr) minmax(150px,1fr) 92px auto auto; gap:8px; align-items:end; flex:1 1 680px; }
@@ -119,6 +120,15 @@
     .version { display:block; margin-top:4px; font-size:.75rem; }
     .toast { position:fixed; right:16px; bottom:16px; z-index:20; background:var(--navy); color:#fff; padding:11px 14px; border-radius:9px; box-shadow:var(--shadow); opacity:0; transform:translateY(10px); pointer-events:none; transition:.2s; }
     .toast.show { opacity:1; transform:none; }
+    .help-modal { width:min(720px,calc(100% - 28px)); max-height:calc(100dvh - 28px); padding:0; border:0; border-radius:16px; color:var(--ink); box-shadow:0 24px 70px rgba(18,38,58,.28); }
+    .help-modal::backdrop { background:rgba(10,26,40,.62); backdrop-filter:blur(2px); }
+    .help-modal-head { position:sticky; top:0; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:17px 20px; border-bottom:1px solid var(--line); background:var(--blue2); }
+    .help-modal-head h2 { margin:0; color:var(--navy); }
+    .help-modal-body { padding:20px; }
+    .help-modal-body h3 { margin:20px 0 6px; color:var(--navy); font-size:1rem; }
+    .help-modal-body h3:first-child { margin-top:0; }
+    .help-modal-body p,.help-modal-body ol,.help-modal-body ul { margin:6px 0; }
+    .help-modal-body li+li { margin-top:5px; }
     .print-header { display:none; }
     body.shared-view .share-hidden { display:none!important; }
     body.shared-view .owner-only { display:none!important; }
@@ -173,7 +183,7 @@
       .print-header h2 { margin:0; }
       .kicking-progress,.gender-progress { padding:7px; }
       .table-wrap { overflow:visible; max-height:none; }
-      table { min-width:0; }
+      table,table.is-locked { width:100%; min-width:0; }
       th,.player-cell { position:static; box-shadow:none; }
       table { table-layout:fixed; }
       th,td { padding:2px 3px; height:auto; }
@@ -191,7 +201,7 @@
   <main>
     <div class="app-shell">
       <section class="toolbar no-print" aria-label="Lineup actions">
-        <div class="actions"><button class="btn btn-secondary owner-only" id="saveBtn">Save</button><button class="btn btn-ghost owner-only" id="loadBtn">Load</button><button class="btn btn-primary" id="printBtn">Print / PDF</button><button class="btn btn-secondary owner-only" id="shareLineupBtn">Share Lineup</button><button class="btn btn-primary owner-only" id="shareBtn">Share with Co-Captain</button></div>
+        <div class="actions"><button class="btn btn-ghost" id="helpBtn">How to Use</button><button class="btn btn-secondary owner-only" id="saveBtn">Save</button><button class="btn btn-ghost owner-only" id="loadBtn">Load</button><button class="btn btn-primary" id="printBtn">Print / PDF</button><button class="btn btn-secondary owner-only" id="shareLineupBtn">Share Lineup</button><button class="btn btn-primary owner-only" id="shareBtn">Share with Co-Captain</button></div>
       </section>
       <div class="content">
         <div class="print-header"><h2 id="printTitle">Kickball Lineup</h2><span id="printMeta"></span></div>
@@ -216,9 +226,22 @@
         <section class="section-card no-print share-hidden"><div class="section-head"><div><h2 class="section-title">Lineup Backup</h2><div class="section-note">Download your lineup or transfer it to another device.</div></div><div class="actions"><button class="btn btn-secondary" id="exportBtn">Export JSON</button><label class="btn btn-ghost" for="importFile" style="text-transform:none;letter-spacing:0;font-size:inherit">Import JSON</label><input id="importFile" type="file" accept="application/json,.json" hidden></div></div></section>
       </div>
     </div>
-    <p class="footer-note">Your lineup stays in this browser unless you export it.<span class="version">Version 2.2.1</span></p>
+    <p class="footer-note">Your lineup stays in this browser unless you export it.<span class="version">Version 2.2.2</span></p>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog class="help-modal" id="helpModal" aria-labelledby="helpTitle">
+    <div class="help-modal-head"><h2 id="helpTitle">How to Use</h2><button class="icon-btn" id="closeHelpBtn" aria-label="Close how-to guide">×</button></div>
+    <div class="help-modal-body">
+      <h3>1. Build a team roster</h3>
+      <ol><li>Select a team, or choose <strong>+ Add Team</strong>.</li><li>Choose <strong>Edit Team</strong> to rename it and add regular or substitute players.</li><li>For each player, open <strong>Choose playable positions</strong> and check every position they can play. Rosters stay alphabetized and save automatically in this browser.</li><li>Choose <strong>Done Editing</strong>, then use <strong>+ Lineup</strong> beside the players and substitutes available for this game.</li></ol>
+      <h3>2. Set up the game</h3>
+      <ul><li>Select the game date and number of innings. Use <strong>+ Add Game</strong> for a doubleheader; the new game keeps the previous kicking order but starts with blank fielding assignments.</li><li>Reorder players with the arrow buttons. The kicking tracker alternates female and male players while rotating each gender independently, so unequal roster sizes are supported.</li><li>Assign each player's position inning by inning, or choose <strong>Autogenerate Defense</strong>. The generator respects playable positions, keeps assignments you already entered, limits the field to five male players, and balances Bench time while preferring substitutes for extra Bench innings.</li></ul>
+      <h3>3. Lock and run the lineup</h3>
+      <ul><li>Every player needs a position or <strong>Bench</strong> in every inning before the lineup can be locked.</li><li>Once locked, use <strong>Kicked — Next</strong> to advance the current, on-deck, and in-the-hole kickers. Change <strong>Current inning</strong> as the game progresses; completed innings are hidden.</li><li>Unlock the lineup whenever you need to make changes. You can also clear only the fielding positions without changing the kicking order.</li></ul>
+      <h3>4. Save, print, back up, and share</h3>
+      <ul><li><strong>Save</strong> stores all teams and lineups in this browser; <strong>Load</strong> restores that saved copy. Export a JSON backup to move everything to another device, and import it later.</li><li><strong>Print / PDF</strong> creates a landscape page containing the lineup and fielding assignments.</li><li><strong>Share Lineup</strong> creates a read-only live link. <strong>Share with Co-Captain</strong> creates a two-way editing link for the roster, lineup, inning, and kicking progress. Keep the owner's sharing page open while others are connected.</li></ul>
+    </div>
+  </dialog>
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
   <script>
     const FIELD_POSITIONS = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "Rover"];
@@ -412,6 +435,10 @@
     refs.lockLineupBtn.addEventListener("click",()=>{const g=game(),locking=!g.lineupLocked;if(locking&&g.players.some(player=>player.positions.some(position=>!position)))return showToast("Assign every player a position for every inning before locking.");g.lineupLocked=locking;if(locking&&g.currentInning===1){g.lastKicker={Female:null,Male:null};g.lastGender=null;}saveData();render();showToast(locking?"Lineup locked.":"Lineup unlocked.");});
     refs.autoDefenseBtn.addEventListener("click",autogenerateDefense);
     $("newTeamBtn").addEventListener("click",addTeam);$("deleteTeamBtn").addEventListener("click",deleteTeam);$("addLineupBtn").addEventListener("click",addLineup);$("deleteLineupBtn").addEventListener("click",deleteLineup);refs.innings.addEventListener("change",e=>setInnings(e.target.value));
+    const helpModal=$("helpModal");
+    $("helpBtn").addEventListener("click",()=>helpModal.showModal());
+    $("closeHelpBtn").addEventListener("click",()=>helpModal.close());
+    helpModal.addEventListener("click",e=>{if(e.target===helpModal)helpModal.close();});
     $("saveBtn").addEventListener("click",()=>{saveData();showToast("All teams and lineups saved.");});$("loadBtn").addEventListener("click",()=>{loadData();render();showToast("Saved teams loaded.");});$("clearPositionsBtn").addEventListener("click",clearPositions);$("clearBtn").addEventListener("click",clearLineup);$("printBtn").addEventListener("click",()=>{const title=`${team().name} - ${game().gameDate} - ${game().name}`;$("printTitle").textContent=`${team().name} — ${game().name}`;$("printMeta").textContent=[game().opponent&&`vs. ${game().opponent}`,game().gameDate].filter(Boolean).join(" • ");document.title=title;window.addEventListener("afterprint",()=>document.title="Kickball Game Day",{once:true});window.print();});$("shareLineupBtn").addEventListener("click",()=>copyShareLink("view"));$("shareBtn").addEventListener("click",()=>copyShareLink("edit"));$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
     if(!loadSharedLineup())loadData();render();
   </script>
