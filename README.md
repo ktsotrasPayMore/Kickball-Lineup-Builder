@@ -15,9 +15,9 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Multiple saved lineups per team for doubleheaders and other multi-game days
 - New games inherit the previous game's kicking order while starting with blank fielding assignments
 - Add a female or male sub for the current game without saving them to the permanent roster
-- One next-kicker control that alternates genders while rotating each gender independently, even when gender counts are uneven
-- Current-inning control above the next kicker within the lineup
-- Locked lineups start with the first player as next kicker and hide completed innings as the current inning advances
+- One current-kicker control that alternates genders while rotating each gender independently, even when gender counts are uneven
+- Current-inning control above the current kicker within the lineup
+- Locked lineups start with the first player as current kicker and hide completed innings as the current inning advances
 - Nine innings by default, with support for adjusting the game length
 - Inning-by-inning assignments for the nine standard baseball positions, **Rover**, and **Bench**
 - Choose every position each roster member can play, then autogenerate valid inning-by-inning defense with scarce-position players assigned first
@@ -28,6 +28,7 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Lock the completed lineup to replace editing controls with easy-to-read text until it is unlocked
 - Browser save/load and JSON import/export for all teams and lineups
 - Print or save a landscape PDF containing only the lineup and fielding assignments
+- Share a live, read-only lineup link; viewers see current-inning, current-kicker, and fielding updates without receiving a new link (the sharing page must remain open)
 
 ## Publish with GitHub Pages
 
@@ -36,4 +37,4 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 3. Under **Build and deployment**, select **Deploy from a branch**.
 4. Select the `main` branch and `/ (root)`, then save.
 
-No build step, framework, package manager, or server is required.
+No build step, framework, package manager, or application server is required. Live lineup sharing loads PeerJS from jsDelivr and uses its public signaling service to connect the sharing browser directly to viewers.
