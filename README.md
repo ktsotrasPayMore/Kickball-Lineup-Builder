@@ -33,7 +33,7 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Browser save/load and JSON import/export for all teams and lineups
 - Print or save a landscape PDF containing only the lineup and fielding assignments
 - Share a read-only live lineup link with the team or a separate co-captain link for full two-way roster, lineup, game, current-inning, and kicking-progress edits (the owner’s sharing page must remain open)
-- Password-protected, unlinked admin dashboard for viewing saved rosters, lineups, and anonymous visit activity
+- Password-protected, unlinked admin dashboard for viewing saved rosters, lineups, and anonymous visit activity, with local 72-hour sign-in persistence
 
 ## Configure the admin dashboard
 
