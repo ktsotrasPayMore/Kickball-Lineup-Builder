@@ -37,19 +37,13 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 
 ## Configure the admin dashboard
 
-The dashboard lives at `admin.html`, but the public builder does not link to or reveal that path. Hiding the address is only a convenience; Supabase Authentication and row-level security provide the actual access control.
+The dashboard needs a free Supabase project to securely store reports and check the administrator password. Follow the beginner-friendly **[Admin Setup Guide](ADMIN_SETUP.md)** for every click, the exact values to copy, testing steps, and troubleshooting.
 
-1. Create a [Supabase](https://supabase.com/) project.
-2. Under **Authentication → Users**, create the administrator user with the email and password you want to use. Never add that password to this repository.
-3. Open the **SQL Editor** and run `supabase-admin.sql`. Then run the final commented `insert` statement with the administrator user's UUID. This creates the reporting tables and policies: anonymous visitors can only add reporting records, while only explicitly allowlisted administrators can read them. Creating another authenticated account does not grant dashboard data access.
-4. In **Project Settings → API**, copy the project URL and publishable/anon key into `admin-config.js`. The anon key is designed to be public; keep the service-role key private and never put it in this site.
-5. Publish the site and navigate directly to `/admin.html`. Sign in with the administrator account created above.
-
-The builder continues to work entirely in local storage if Supabase is not configured or cannot be reached. Once configured, it records a random browser identifier, visit time, page, referrer, user agent, and a copy of locally saved team/lineup data. It does not collect a visitor’s name, email address, or IP address in application tables. Add an appropriate privacy notice for your jurisdiction before enabling reporting publicly.
+The private page lives at `/admin.html` and is deliberately not linked from the public builder. Its password and database permissions—not the hidden address—provide the security.
 
 ## Publish with GitHub Pages
 
-1. Upload `index.html` to the repository root.
+1. Keep `index.html`, `admin.html`, `admin-config.js`, and the other repository files in the repository root.
 2. In the repository, open **Settings → Pages**.
 3. Under **Build and deployment**, select **Deploy from a branch**.
 4. Select the `main` branch and `/ (root)`, then save.

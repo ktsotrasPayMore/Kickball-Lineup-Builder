@@ -27,6 +27,14 @@ alter table public.visitor_events enable row level security;
 alter table public.roster_snapshots enable row level security;
 alter table public.admin_users enable row level security;
 
+-- Dropping these first makes this setup script safe to run again if setup was
+-- interrupted or a policy already exists.
+drop policy if exists "anonymous visitors can be recorded" on public.visitor_events;
+drop policy if exists "anonymous snapshots can be created" on public.roster_snapshots;
+drop policy if exists "admins can read visits" on public.visitor_events;
+drop policy if exists "admins can read snapshots" on public.roster_snapshots;
+drop policy if exists "admins can read their authorization" on public.admin_users;
+
 create policy "anonymous visitors can be recorded" on public.visitor_events
   for insert to anon with check (page_path <> '/admin.html');
 create policy "anonymous snapshots can be created" on public.roster_snapshots
