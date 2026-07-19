@@ -33,6 +33,19 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Browser save/load and JSON import/export for all teams and lineups
 - Print or save a landscape PDF containing only the lineup and fielding assignments
 - Share a read-only live lineup link with the team or a separate co-captain link for full two-way roster, lineup, game, current-inning, and kicking-progress edits (the owner’s sharing page must remain open)
+- Password-protected, unlinked admin dashboard for viewing saved rosters, lineups, and anonymous visit activity
+
+## Configure the admin dashboard
+
+The dashboard lives at `admin.html`, but the public builder does not link to or reveal that path. Hiding the address is only a convenience; Supabase Authentication and row-level security provide the actual access control.
+
+1. Create a [Supabase](https://supabase.com/) project.
+2. Under **Authentication → Users**, create the administrator user with the email and password you want to use. Never add that password to this repository.
+3. Open the **SQL Editor** and run `supabase-admin.sql`. Then run the final commented `insert` statement with the administrator user's UUID. This creates the reporting tables and policies: anonymous visitors can only add reporting records, while only explicitly allowlisted administrators can read them. Creating another authenticated account does not grant dashboard data access.
+4. In **Project Settings → API**, copy the project URL and publishable/anon key into `admin-config.js`. The anon key is designed to be public; keep the service-role key private and never put it in this site.
+5. Publish the site and navigate directly to `/admin.html`. Sign in with the administrator account created above.
+
+The builder continues to work entirely in local storage if Supabase is not configured or cannot be reached. Once configured, it records a random browser identifier, visit time, page, referrer, user agent, and a copy of locally saved team/lineup data. It does not collect a visitor’s name, email address, or IP address in application tables. Add an appropriate privacy notice for your jurisdiction before enabling reporting publicly.
 
 ## Publish with GitHub Pages
 
