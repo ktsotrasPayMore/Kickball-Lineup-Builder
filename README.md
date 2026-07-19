@@ -33,10 +33,17 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Browser save/load and JSON import/export for all teams and lineups
 - Print or save a landscape PDF containing only the lineup and fielding assignments
 - Share a read-only live lineup link with the team or a separate co-captain link for full two-way roster, lineup, game, current-inning, and kicking-progress edits (the owner’s sharing page must remain open)
+- Password-protected, unlinked admin dashboard for viewing saved rosters, lineups, and anonymous visit activity
+
+## Configure the admin dashboard
+
+The dashboard needs a free Supabase project to securely store reports and check the administrator password. Follow the beginner-friendly **[Admin Setup Guide](ADMIN_SETUP.md)** for every click, the exact values to copy, testing steps, and troubleshooting.
+
+The private page lives at `/admin.html` and is deliberately not linked from the public builder. Its password and database permissions—not the hidden address—provide the security.
 
 ## Publish with GitHub Pages
 
-1. Upload `index.html` to the repository root.
+1. Keep `index.html`, `admin.html`, `admin-config.js`, and the other repository files in the repository root.
 2. In the repository, open **Settings → Pages**.
 3. Under **Build and deployment**, select **Deploy from a branch**.
 4. Select the `main` branch and `/ (root)`, then save.
