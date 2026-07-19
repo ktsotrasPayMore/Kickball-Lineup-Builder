@@ -249,6 +249,7 @@
       <ul><li><strong>Save</strong> stores all teams and lineups in this browser; <strong>Load</strong> restores that saved copy. Export a JSON backup to move everything to another device, and import it later.</li><li><strong>Print / PDF</strong> creates a landscape page containing the lineup and fielding assignments.</li><li><strong>Share Lineup</strong> creates a read-only live link. <strong>Share with Co-Captain</strong> creates a two-way editing link for the roster, lineup, inning, and kicking progress. Keep the owner's sharing page open while others are connected.</li></ul>
     </div>
   </dialog>
+  <script src="admin-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
   <script>
     const FIELD_POSITIONS = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "Rover"];
@@ -276,7 +277,15 @@
     function normalizePlayer(p,innings) { const positions=Array.isArray(p.positions)?p.positions.slice(0,innings):[]; while(positions.length<innings)positions.push(""); return {id:p.id||uid(),rosterId:p.rosterId||null,subId:p.subId||null,name:String(p.name||""),gender:GENDERS.includes(p.gender)?p.gender:"Female",isSub:Boolean(p.isSub),eligiblePositions:validEligibility(p.eligiblePositions),positions}; }
     function normalizeLineup(l,i=0){const innings=Math.max(1,Math.min(30,Number(l?.innings)||9));return {id:l?.id||uid(),name:String(l?.name||`Game ${i+1}`),opponent:String(l?.opponent||""),gameDate:l?.gameDate||today(),innings,currentInning:Math.max(1,Math.min(innings,Number(l?.currentInning)||1)),players:Array.isArray(l?.players)?l.players.map(p=>normalizePlayer(p,innings)):[],lastKicker:{Female:l?.lastKicker?.Female||null,Male:l?.lastKicker?.Male||null},lastGender:GENDERS.includes(l?.lastGender)?l.lastGender:null,lineupLocked:Boolean(l?.lineupLocked)};}
     function normalizeTeam(t){const lineups=Array.isArray(t?.lineups)&&t.lineups.length?t.lineups.map(normalizeLineup):[newLineup(1)],normalizeMembers=members=>(Array.isArray(members)?members:[]).filter(p=>p?.name).map(p=>({id:p.id||uid(),name:String(p.name),gender:GENDERS.includes(p.gender)?p.gender:"Female",eligiblePositions:validEligibility(p.eligiblePositions)})).sort(alpha),roster=normalizeMembers(t?.roster),subs=normalizeMembers(t?.subs);return {id:t?.id||uid(),name:String(t?.name||"New Team"),roster,subs,lineups,activeLineupId:lineups.some(l=>l.id===t?.activeLineupId)?t.activeLineupId:lineups[0].id};}
-    function saveData(){if(readOnlyView)return;if(!sharedView)localStorage.setItem("kickballTeams",JSON.stringify({version:8,activeTeamId:state.activeTeamId,teams:state.teams}));broadcastLiveLineup();}
+    let adminSyncTimer;
+    const adminConfig = window.KICKBALL_ADMIN_CONFIG || {};
+    const adminHeaders = {apikey:adminConfig.supabaseAnonKey||"","Content-Type":"application/json"};
+    const browserId = (()=>{let id=localStorage.getItem("kickballBrowserId");if(!id){id=uid();localStorage.setItem("kickballBrowserId",id);}return id;})();
+    function adminRequest(path,options={}){if(!adminConfig.supabaseUrl||!adminConfig.supabaseAnonKey)return Promise.resolve();return fetch(`${adminConfig.supabaseUrl}/rest/v1/${path}`,{...options,headers:{...adminHeaders,...options.headers}}).catch(()=>{});}
+    function recordVisit(){if(sharedView)return;adminRequest("visitor_events",{method:"POST",body:JSON.stringify({browser_id:browserId,page_path:location.pathname,referrer:document.referrer||null,user_agent:navigator.userAgent})});}
+    function syncAdminSnapshot(){if(sharedView||readOnlyView||!state.teams.length)return;adminRequest("roster_snapshots",{method:"POST",body:JSON.stringify({browser_id:browserId,payload:payload(),team_count:state.teams.length,lineup_count:state.teams.reduce((count,t)=>count+t.lineups.length,0),player_count:state.teams.reduce((count,t)=>count+t.roster.length+t.subs.length,0),updated_at:new Date().toISOString()})});}
+    function queueAdminSync(){clearTimeout(adminSyncTimer);adminSyncTimer=setTimeout(syncAdminSnapshot,700);}
+    function saveData(){if(readOnlyView)return;if(!sharedView){localStorage.setItem("kickballTeams",JSON.stringify({version:8,activeTeamId:state.activeTeamId,teams:state.teams}));queueAdminSync();}broadcastLiveLineup();}
     function loadData(){try{const data=JSON.parse(localStorage.getItem("kickballTeams")||"null");if(data?.teams?.length){state.teams=data.teams.map(normalizeTeam);state.activeTeamId=state.teams.some(t=>t.id===data.activeTeamId)?data.activeTeamId:state.teams[0].id;return;}const oldRoster=JSON.parse(localStorage.getItem("kickballRoster")||"[]");const oldGame=JSON.parse(localStorage.getItem("kickballGameDay")||"null");const t=normalizeTeam({name:oldGame?.teamName||"New Team",roster:oldRoster,lineups:oldGame?[oldGame]:undefined});state.teams=[t];state.activeTeamId=t.id;saveData();}catch{const t=normalizeTeam({name:"New Team"});state.teams=[t];state.activeTeamId=t.id;saveData();}}
     const labelFor = p => p?.name.trim() || "Unnamed substitute";
     function genderPlayers(gender){return game().players.filter(p=>p.gender===gender);}
@@ -448,7 +457,7 @@
     helpModal.addEventListener("click",e=>{if(e.target===helpModal)helpModal.close();});
     helpModal.addEventListener("close",()=>document.body.classList.remove("help-open"));
     $("saveBtn").addEventListener("click",()=>{saveData();showToast("All teams and lineups saved.");});$("loadBtn").addEventListener("click",()=>{loadData();render();showToast("Saved teams loaded.");});$("clearPositionsBtn").addEventListener("click",clearPositions);$("clearBtn").addEventListener("click",clearLineup);$("printBtn").addEventListener("click",()=>{const title=`${team().name} - ${game().gameDate} - ${game().name}`;$("printTitle").textContent=`${team().name} — ${game().name}`;$("printMeta").textContent=[game().opponent&&`vs. ${game().opponent}`,game().gameDate].filter(Boolean).join(" • ");document.title=title;window.addEventListener("afterprint",()=>document.title="Kickball Game Day",{once:true});window.print();});$("shareLineupBtn").addEventListener("click",()=>copyShareLink("view"));$("shareBtn").addEventListener("click",()=>copyShareLink("edit"));$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
-    if(!loadSharedLineup())loadData();render();
+    if(!loadSharedLineup()){loadData();recordVisit();syncAdminSnapshot();}render();
   </script>
 </body>
 </html>
