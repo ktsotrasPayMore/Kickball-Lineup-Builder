@@ -1,0 +1,32 @@
+name: Apply Supabase admin schema
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - supabase-admin.sql
+      - .github/workflows/apply-supabase-admin.yml
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-admin-production
+  cancel-in-progress: false
+
+jobs:
+  apply-schema:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Apply admin schema
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "SUPABASE_DB_URL is not configured." >&2
+            exit 1
+          fi
+          psql "$SUPABASE_DB_URL" --set=ON_ERROR_STOP=1 --file=supabase-admin.sql

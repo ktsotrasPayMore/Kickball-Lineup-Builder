@@ -47,7 +47,7 @@ Keep this browser tab open.
 
 This creates three tables:
 
-- `visitor_events` contains anonymous page visits.
+- `visitor_events` contains page visits, including the requesting IP address.
 - `roster_snapshots` contains the latest submitted roster/lineup data.
 - `admin_users` is the allowlist of people permitted to read the first two tables.
 
@@ -72,6 +72,18 @@ on conflict (user_id) do nothing;
 ```
 
 Press **Run**. A success response means this user is now an approved administrator. Creating a Supabase user without completing this step does **not** give that user access to the reports.
+
+## Optional: apply future SQL changes automatically
+
+The repository includes a GitHub Actions workflow that runs `supabase-admin.sql` whenever that file changes on the `main` branch. To enable it:
+
+1. In Supabase, open **Connect**, select a direct connection or session-pooler connection, and copy its PostgreSQL connection string. Replace the password placeholder with your project database password.
+2. In GitHub, open **Settings** → **Secrets and variables** → **Actions**.
+3. Create a repository secret named `SUPABASE_DB_URL` and paste the complete connection string as its value.
+4. In GitHub, open **Settings** → **Environments**, create an environment named `production`, and optionally add a required reviewer if you want approval before database changes run.
+5. Open the repository's **Actions** tab and run **Apply Supabase admin schema** once with **Run workflow** to verify the connection.
+
+After setup, a push to `main` that changes `supabase-admin.sql` automatically applies the complete script. The workflow stops at the first SQL error. The connection string contains a database password, so never put it in `admin-config.js`, a workflow file, or any other committed file. Rotate the database password immediately if the connection string is exposed.
 
 ## Step 5: Copy the two public connection values
 
@@ -113,6 +125,8 @@ Do not put the admin email, admin password, database password, or Supabase secre
 5. Sign in with the **admin email and admin website password** created in Step 2.
 6. You should see at least one visit, one visitor, and the test roster/lineup. Choose **Refresh** if the information is not visible immediately.
 7. Choose **Sign out** and confirm that the reports disappear and the sign-in form returns.
+
+The dashboard's **Clear saved data** button deletes all centrally reported roster and lineup snapshots without changing anything saved in visitors' browsers. **Clear visitors** deletes the recorded visitor events and resets the visit totals. Both actions ask for confirmation and cannot be undone.
 
 There is intentionally no Admin button on the normal site. Bookmark the admin address for your own use. Anyone who guesses the address will still need an allowlisted account and its password.
 
@@ -162,4 +176,4 @@ The lineup builder still saves to that visitor's browser even if Supabase is off
 
 ## Privacy reminder
 
-When configured, reporting stores a random browser identifier, visit time, page path, referrer, browser user-agent string, and a copy of locally saved team/lineup data. The application tables do not intentionally store a visitor's email address or IP address. Supabase or other infrastructure providers may still keep operational logs. Add an appropriate privacy notice and follow the rules that apply where you operate the site.
+When configured, reporting stores a random browser identifier, IP address, visit time, page path, referrer, browser user-agent string, and a copy of locally saved team/lineup data. A default empty team named “New Team” is not submitted as a roster snapshot, so a visitor who only opens the builder appears in visitor reporting but not under created rosters and lineups. Each normal page load is a visit. The unique-visitor total groups visits by the random identifier saved in that browser. The identifier has no application expiration date: it normally remains in that browser's `localStorage` indefinitely, even after the browser or device is restarted, until the browser clears or evicts the site's data. Private browsing generally removes it when the private session closes. Clearing site data, private browsing, another browser or device, or visiting the site at a different origin can therefore create a new identifier and count the same person again. Add an appropriate privacy notice and follow the privacy and data-retention rules that apply where you operate the site.
