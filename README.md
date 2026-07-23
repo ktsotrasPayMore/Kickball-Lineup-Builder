@@ -18,10 +18,10 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Keep substitutes in a separate section with playable-position choices and add or remove them from a game lineup with one tap
 - Current, on-deck, and in-the-hole kicker status that alternates genders while rotating each gender independently, even when gender counts are uneven
 - Current-inning control above the current kicker within the lineup
-- Locked lineups start with the first player as current kicker and hide completed innings as the current inning advances
+- Locked lineups start with the first player as current kicker and highlight the current inning while keeping every inning visible
 - Nine innings by default, with support for adjusting the game length
 - Inning-by-inning assignments for the nine standard baseball positions, **Rover**, and **Bench**
-- Choose every position each roster member can play, then autogenerate valid inning-by-inning defense with scarce-position players assigned first while preserving assignments already entered
+- Optionally choose every position each roster member can play, then autogenerate valid inning-by-inning defense with scarce-position players assigned first while preserving assignments already entered; players without selections can play any position
 - Automatically balanced bench rotations when the lineup exceeds the available fielding spots or the five-male limit
 - Field no more than five male players per inning while using every available male player when there are fewer than five
 - Prefer substitutes for extra bench time while continuing to rotate the rest of the lineup
