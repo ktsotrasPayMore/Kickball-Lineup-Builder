@@ -27,6 +27,18 @@ create table if not exists public.roster_snapshots (
   updated_at timestamptz not null default now()
 );
 
+-- Persistent shared teams use separate unguessable viewer and editor secrets.
+-- Only security-definer functions below can access this table.
+create extension if not exists pgcrypto;
+create table if not exists public.shared_teams (
+  share_id uuid primary key,
+  edit_token_hash bytea not null,
+  view_token_hash bytea not null,
+  payload jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- These tables preserve all-time counters when the recent-event list is
 -- cleared. The registry also determines whether a browser is truly new.
 create table if not exists public.visitor_totals (
@@ -56,6 +68,7 @@ on conflict (id) do nothing;
 
 alter table public.visitor_events enable row level security;
 alter table public.roster_snapshots enable row level security;
+alter table public.shared_teams enable row level security;
 alter table public.admin_users enable row level security;
 alter table public.visitor_totals enable row level security;
 alter table public.visitor_registry enable row level security;
@@ -88,6 +101,39 @@ create policy "admins can read visitor totals" on public.visitor_totals
 
 create index if not exists visitor_events_visited_at_idx on public.visitor_events (visited_at desc);
 create index if not exists roster_snapshots_updated_at_idx on public.roster_snapshots (updated_at desc);
+create index if not exists shared_teams_updated_at_idx on public.shared_teams (updated_at desc);
+
+create or replace function public.create_shared_team(p_share_id uuid, p_edit_token text, p_view_token text, p_payload jsonb)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if length(p_edit_token) < 32 or length(p_view_token) < 32 or p_payload is null then raise exception 'Invalid shared team'; end if;
+  insert into public.shared_teams (share_id, edit_token_hash, view_token_hash, payload)
+  values (p_share_id, digest(p_edit_token, 'sha256'), digest(p_view_token, 'sha256'), p_payload);
+end; $$;
+
+create or replace function public.get_shared_team(p_share_id uuid, p_access_token text)
+returns table(payload jsonb, updated_at timestamptz, can_edit boolean)
+language sql security definer set search_path = public, extensions as $$
+  select s.payload, s.updated_at, s.edit_token_hash = digest(p_access_token, 'sha256')
+  from public.shared_teams s
+  where s.share_id = p_share_id
+    and (s.edit_token_hash = digest(p_access_token, 'sha256') or s.view_token_hash = digest(p_access_token, 'sha256'));
+$$;
+
+create or replace function public.update_shared_team(p_share_id uuid, p_edit_token text, p_payload jsonb)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  update public.shared_teams set payload = p_payload, updated_at = now()
+  where share_id = p_share_id and edit_token_hash = digest(p_edit_token, 'sha256');
+  if not found then raise exception 'Shared team not found'; end if;
+end; $$;
+
+revoke all on function public.create_shared_team(uuid, text, text, jsonb) from public;
+revoke all on function public.get_shared_team(uuid, text) from public;
+revoke all on function public.update_shared_team(uuid, text, jsonb) from public;
+grant execute on function public.create_shared_team(uuid, text, text, jsonb) to anon;
+grant execute on function public.get_shared_team(uuid, text) to anon;
+grant execute on function public.update_shared_team(uuid, text, jsonb) to anon;
 
 -- Record visits through a database function so the IP comes from Supabase's
 -- trusted request headers rather than from user-controlled browser data.

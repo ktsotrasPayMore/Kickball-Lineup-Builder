@@ -45,11 +45,12 @@ Keep this browser tab open.
 4. Choose **New query**, paste the copied SQL, and press **Run**.
 5. A success message should appear. The script is safe to run again if you accidentally run it twice.
 
-This creates three tables:
+This creates the reporting tables plus the persistent-sharing table:
 
 - `visitor_events` contains page visits, including the requesting IP address.
 - `roster_snapshots` contains the latest submitted roster/lineup data.
 - `admin_users` is the allowlist of people permitted to read the first two tables.
+- `shared_teams` stores token-protected shared rosters and lineups so captains do not need to be online at the same time.
 
 It also turns on Row Level Security. Visitors can submit reports but cannot read everybody else's data.
 
