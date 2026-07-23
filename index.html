@@ -57,6 +57,7 @@
     .progress-name { display:block; color:var(--navy); font-size:1.35rem; font-weight:900; margin-top:2px; }
     .inning-control { min-width:110px; }
     .inning-control select { margin-top:5px; }
+    .inning-control .progress-name { min-height:42px; padding:7px 0; }
     .due-card { background:var(--navy); color:#fff; border-radius:12px; padding:17px; min-height:118px; display:flex; flex-direction:column; justify-content:center; }
     .due-card .eyebrow { color:#aedaef; font-weight:800; text-transform:uppercase; letter-spacing:.08em; font-size:.72rem; }
     .due-name { font-size:1.55rem; font-weight:900; margin:3px 0; }
@@ -85,7 +86,6 @@
     .table-wrap { width:100%; overflow-x:auto; overflow-y:visible; overscroll-behavior-inline:contain; }
     table { border-collapse:separate; border-spacing:0; width:100%; min-width:760px; }
     table.is-locked { width:max-content; min-width:0; table-layout:fixed; }
-    table.is-locked .past-inning { display:none; }
     table.is-locked th:not(.player-cell),table.is-locked .position-cell { width:108px; min-width:108px; }
     th,td { border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:8px; text-align:left; background:#fff; }
     th { position:sticky; top:0; z-index:4; background:#f7fafc; color:var(--navy); font-size:.74rem; text-transform:uppercase; letter-spacing:.045em; white-space:nowrap; }
@@ -93,6 +93,9 @@
     tr:last-child td { border-bottom:0; }
     #lineupBody tr:nth-child(even) td { background:#f0f2f4; }
     #lineupBody tr:not(:last-child) td { border-bottom:2px solid #b9c8d3; }
+    #lineupTable th.current-inning { background:#bfe4f7; color:#0b4f78; box-shadow:inset 3px 0 #1683bd,inset -3px 0 #1683bd; }
+    #lineupTable td.current-inning { background:#e1f4fd; box-shadow:inset 3px 0 #1683bd,inset -3px 0 #1683bd; }
+    #lineupBody tr:nth-child(even) td.current-inning { background:#cdebf9; }
     .player-cell { position:sticky; left:0; z-index:2; min-width:var(--sticky); width:var(--sticky); box-shadow:4px 0 7px rgba(18,38,58,.07); }
     th.player-cell { z-index:6; background:#edf5fa; }
     .player-wrap { display:flex; align-items:center; gap:7px; }
@@ -189,7 +192,6 @@
       .kicking-progress,.gender-progress { padding:7px; }
       .table-wrap { overflow:visible; max-height:none; }
       table,table.is-locked { width:100%; min-width:0; }
-      table.is-locked .past-inning { display:table-cell; }
       th,.player-cell { position:static; box-shadow:none; }
       table { table-layout:fixed; }
       th,td { padding:2px 3px; height:auto; }
@@ -240,11 +242,11 @@
     <div class="help-modal-head"><h2 id="helpTitle">How to Use</h2><button class="icon-btn" id="closeHelpBtn" aria-label="Close how-to guide">×</button></div>
     <div class="help-modal-body">
       <h3>1. Build a team roster</h3>
-      <ol><li>Select a team, or choose <strong>+ Add Team</strong>.</li><li>Choose <strong>Edit Team</strong> to rename it and add regular or substitute players.</li><li>For each player, open <strong>Choose playable positions</strong> and check every position they can play. Rosters stay alphabetized and save automatically in this browser.</li><li>Choose <strong>Done Editing</strong>, then use <strong>+ Lineup</strong> beside the players and substitutes available for this game.</li></ol>
+      <ol><li>Select a team, or choose <strong>+ Add Team</strong>.</li><li>Choose <strong>Edit Team</strong> to rename it and add regular or substitute players.</li><li>For each player, you can open <strong>Choose playable positions</strong> and check every position they can play. If none are checked, Autogenerate Defense treats that player as able to play anywhere. Rosters stay alphabetized and save automatically in this browser.</li><li>Choose <strong>Done Editing</strong>, then use <strong>+ Lineup</strong> beside the players and substitutes available for this game.</li></ol>
       <h3>2. Set up the game</h3>
-      <ul><li>Select the game date and number of innings. Use <strong>+ Add Game</strong> for a doubleheader; the new game keeps the previous kicking order but starts with blank fielding assignments.</li><li>Reorder players with the arrow buttons. The kicking tracker alternates female and male players while rotating each gender independently, so unequal roster sizes are supported.</li><li>Assign each player's position inning by inning, or choose <strong>Autogenerate Defense</strong>. The generator respects playable positions, keeps assignments you already entered, limits the field to five male players, and balances Bench time while preferring substitutes for extra Bench innings.</li></ul>
+      <ul><li>Select the game date and number of innings. Use <strong>+ Add Game</strong> for a doubleheader; the new game keeps the previous kicking order but starts with blank fielding assignments.</li><li>Reorder players with the arrow buttons. The kicking tracker alternates female and male players while rotating each gender independently, so unequal roster sizes are supported.</li><li>Assign each player's position inning by inning, or choose <strong>Autogenerate Defense</strong>. The generator respects any selected playable positions, allows players with none selected to play anywhere, keeps assignments you already entered, limits the field to five male players, and balances unavoidable Bench time while preferring substitutes for extra Bench innings.</li></ul>
       <h3>3. Lock and run the lineup</h3>
-      <ul><li>Add at least five players, and make sure every player has a position or <strong>Bench</strong> in every inning before the lineup can be locked.</li><li>Once locked, use <strong>Kicked — Next</strong> to advance the current, on-deck, and in-the-hole kickers. Change <strong>Current inning</strong> as the game progresses; completed innings are hidden.</li><li>Unlock the lineup whenever you need to make changes. You can also clear only the fielding positions without changing the kicking order.</li></ul>
+      <ul><li>Add at least five players, and make sure every player has a position or <strong>Bench</strong> in every inning before the lineup can be locked.</li><li>Once locked, use <strong>Kicked — Next</strong> to advance the current, on-deck, and in-the-hole kickers. Change <strong>Current inning</strong> as the game progresses; its lineup column is highlighted while every inning remains visible.</li><li>Unlock the lineup whenever you need to make changes. You can also clear only the fielding positions without changing the kicking order.</li></ul>
       <h3>4. Save, print, back up, and share</h3>
       <ul><li><strong>Save</strong> stores all teams and lineups in this browser; <strong>Load</strong> restores that saved copy. Export a JSON backup to move everything to another device, and import it later.</li><li><strong>Print / PDF</strong> creates a landscape page containing the lineup and fielding assignments.</li><li><strong>Share Lineup</strong> creates a read-only live link. <strong>Share with Co-Captain</strong> creates a two-way editing link for the roster, lineup, inning, and kicking progress. Keep the owner's sharing page open while others are connected.</li></ul>
     </div>
@@ -310,7 +312,7 @@
     }
     function renderKickingProgress(){
       const g=game();refs.evenProgress.hidden=!g.lineupLocked;if(!g.lineupLocked){refs.evenProgress.innerHTML="";return;}
-      const [current,onDeck,inTheHole]=upcomingKickers(),inningControl=`<select id="currentInning" aria-label="Current inning" ${readOnlyView?"disabled":""}>${Array.from({length:g.innings},(_,i)=>`<option value="${i+1}" ${g.currentInning===i+1?"selected":""}>Inning ${i+1}</option>`).join("")}</select>`,kickerCard=(label,item,empty)=>`<div class="kicker-status"><span class="progress-label">${label}</span><span class="progress-name">${esc(item.next?labelFor(item.next):empty)}</span><span class="section-note">${item.next?item.nextGender:"Build the lineup to begin"}</span></div>`;refs.evenProgress.innerHTML=`<div><div class="inning-control"><span class="progress-label">Current inning</span>${inningControl}</div><div class="progress-summary">${kickerCard("Current kicker",current,"Add players")}${kickerCard("On deck kicker",onDeck,"—")}${kickerCard("In the hole kicker",inTheHole,"—")}</div></div><button class="btn btn-primary" data-kicking-action="advance" ${current.next?"":"disabled"}>Kicked — Next</button>`;
+      const [current,onDeck,inTheHole]=upcomingKickers(),inningControl=readOnlyView?`<span class="progress-name">Inning ${g.currentInning}</span>`:`<select id="currentInning" aria-label="Current inning">${Array.from({length:g.innings},(_,i)=>`<option value="${i+1}" ${g.currentInning===i+1?"selected":""}>Inning ${i+1}</option>`).join("")}</select>`,kickerCard=(label,item,empty)=>`<div class="kicker-status"><span class="progress-label">${label}</span><span class="progress-name">${esc(item.next?labelFor(item.next):empty)}</span><span class="section-note">${item.next?item.nextGender:"Build the lineup to begin"}</span></div>`;refs.evenProgress.innerHTML=`<div><div class="inning-control"><span class="progress-label">Current inning</span>${inningControl}</div><div class="progress-summary">${kickerCard("Current kicker",current,"Add players")}${kickerCard("On deck kicker",onDeck,"—")}${kickerCard("In the hole kicker",inTheHole,"—")}</div></div><button class="btn btn-primary" data-kicking-action="advance" ${current.next?"":"disabled"}>Kicked — Next</button>`;
     }
     function positionChoices(player,index,type){return FIELD_POSITIONS.map(pos=>`<label><input type="checkbox" data-${type}-position="${esc(pos)}" data-${type}-index="${index}" ${player.eligiblePositions.includes(pos)?"checked":""}> ${esc(pos)}</label>`).join("");}
     function renderRoster(){
@@ -321,10 +323,10 @@
     function positionOptions(playerIndex,inning,selected){const used=new Set(game().players.map((p,i)=>i===playerIndex?"":p.positions[inning]).filter(p=>p&&p!=="Bench"));return POSITIONS.map(pos=>`<option value="${pos}" ${pos===selected?"selected":""} ${used.has(pos)?"disabled":""}>${pos||"—"}${used.has(pos)?" (taken)":""}</option>`).join("");}
     function syncInputs(){const t=team(),g=game(),datedGames=gamesOnDate(t,g.gameDate),savedDates=[...new Set(t.lineups.filter(lineup=>lineup.players.length).map(lineup=>lineup.gameDate))].sort();refs.teamNameEdit.value=t.name;refs.gameDate.value=g.gameDate;refs.lineupDates.innerHTML=savedDates.map(date=>`<option value="${date}" label="● Lineup saved"></option>`).join("");refs.innings.value=g.innings;refs.teamSelect.innerHTML=state.teams.map(x=>`<option value="${x.id}" ${x.id===t.id?"selected":""}>${esc(x.name)}</option>`).join("");refs.lineupSelect.innerHTML=datedGames.map((x,i)=>`<option value="${x.id}" ${x.id===g.id?"selected":""}>${esc(x.name||`Game ${i+1}`)}</option>`).join("");}
     function render(){
-      const g=game(),displayLocked=g.lineupLocked||readOnlyView,firstInning=g.lineupLocked?g.currentInning-1:0;syncInputs();$("lineupTable").classList.toggle("is-locked",displayLocked);
-      refs.head.innerHTML=`<tr><th class="player-cell">Player</th>${Array.from({length:g.innings},(_,inn)=>`<th class="${inn<firstInning?"past-inning":""}">Inn ${inn+1}</th>`).join("")}${displayLocked?"":'<th class="no-print">Game actions</th>'}</tr>`;
+      const g=game(),displayLocked=g.lineupLocked||readOnlyView,currentInning=g.currentInning-1;syncInputs();$("lineupTable").classList.toggle("is-locked",displayLocked);
+      refs.head.innerHTML=`<tr><th class="player-cell">Player</th>${Array.from({length:g.innings},(_,inn)=>`<th class="${inn===currentInning?"current-inning":""}">Inn ${inn+1}</th>`).join("")}${displayLocked?"":'<th class="no-print">Game actions</th>'}</tr>`;
       if(!g.players.length)refs.body.innerHTML=`<tr><td colspan="${g.innings+(displayLocked?1:2)}" class="empty-state">No players yet. Add someone from this team’s roster or substitute list.</td></tr>`;
-      else refs.body.innerHTML=g.players.map((p,i)=>`<tr><td class="player-cell"><div class="player-wrap"><span class="order">${i+1}</span><span class="locked-value">${esc(labelFor(p))}</span>${p.isSub?' <span class="sub-badge">Sub</span>':""}</div></td>${p.positions.map((pos,inn)=>`<td class="position-cell ${inn<firstInning?"past-inning":""}">${displayLocked?`<span class="locked-value">${esc(pos||"—")}</span>`:`<select data-inning="${inn}" data-index="${i}" aria-label="${esc(labelFor(p))}, inning ${inn+1} position">${positionOptions(i,inn,pos)}</select>`}</td>`).join("")}${displayLocked?"":`<td class="controls-cell no-print"><button class="icon-btn" data-action="up" data-index="${i}" aria-label="Move up">↑</button> <button class="icon-btn" data-action="down" data-index="${i}" aria-label="Move down">↓</button>${editingTeam?"":` <button class="icon-btn delete" data-action="delete" data-index="${i}" aria-label="Remove">×</button>`}</td>`}</tr>`).join("");
+      else refs.body.innerHTML=g.players.map((p,i)=>`<tr><td class="player-cell"><div class="player-wrap"><span class="order">${i+1}</span><span class="locked-value">${esc(labelFor(p))}</span>${p.isSub?' <span class="sub-badge">Sub</span>':""}</div></td>${p.positions.map((pos,inn)=>`<td class="position-cell ${inn===currentInning?"current-inning":""}">${displayLocked?`<span class="locked-value">${esc(pos||"—")}</span>`:`<select data-inning="${inn}" data-index="${i}" aria-label="${esc(labelFor(p))}, inning ${inn+1} position">${positionOptions(i,inn,pos)}</select>`}</td>`).join("")}${displayLocked?"":`<td class="controls-cell no-print"><button class="icon-btn" data-action="up" data-index="${i}" aria-label="Move up">↑</button> <button class="icon-btn" data-action="down" data-index="${i}" aria-label="Move down">↓</button>${editingTeam?"":` <button class="icon-btn delete" data-action="delete" data-index="${i}" aria-label="Remove">×</button>`}</td>`}</tr>`).join("");
       refs.lockLineupBtn.textContent=g.lineupLocked?"Unlock Lineup":"Lock Lineup";refs.lockLineupBtn.className=`btn ${g.lineupLocked?"btn-secondary":"btn-primary"}`;refs.lockLineupBtn.disabled=!g.lineupLocked&&g.players.length<5;refs.autoDefenseBtn.disabled=g.lineupLocked||!g.players.length;$("clearPositionsBtn").disabled=g.lineupLocked;$("clearBtn").disabled=g.lineupLocked;$("deleteLineupBtn").disabled=g.lineupLocked;refs.innings.disabled=g.lineupLocked;refs.gameDate.disabled=readOnlyView;$("teamControls").classList.toggle("is-editing",editingTeam);$("teamNameField").hidden=!editingTeam;$("editTeamBtn").textContent=editingTeam?"Done Editing":"Edit Team";$("newTeamBtn").hidden=editingTeam||sharedView;document.querySelectorAll(".team-edit-control").forEach(el=>el.hidden=!editingTeam||sharedView);$("lineupNote").textContent=readOnlyView?`${team().name} shared this read-only lineup.`:sharedView?`${team().name} is synced live. Changes from either captain update the shared builder.`:"Create separate lineups for doubleheaders. Roster player names stay linked and cannot be edited here.";renderKickingProgress();renderRoster();
     }
     function addRosterPlayer(name,gender){const clean=name.trim(),t=team();if(!editingTeam||!clean)return;if(t.roster.some(p=>p.name.localeCompare(clean,undefined,{sensitivity:"base"})===0))return showToast(`${clean} is already on this roster.`);t.roster.push({id:uid(),name:clean,gender,eligiblePositions:[]});t.roster.sort(alpha);saveData();render();refs.rosterName.value="";refs.rosterName.focus();showToast(`${clean} added to ${t.name}.`);}
@@ -340,25 +342,26 @@
     function removePlayer(i){const g=game();if(editingTeam||g.lineupLocked)return;const [p]=g.players.splice(i,1);if(p&&g.lastKicker[p.gender]===p.id)g.lastKicker[p.gender]=null;saveData();render();}
     function setInnings(value){const g=game();if(g.lineupLocked)return;g.innings=Math.max(1,Math.min(30,Number(value)||1));g.currentInning=Math.min(g.currentInning,g.innings);g.players=g.players.map(p=>normalizePlayer(p,g.innings));saveData();render();}
     const shuffled = values => { const copy=[...values]; for(let i=copy.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[copy[i],copy[j]]=[copy[j],copy[i]];} return copy; };
+    const playablePositions = player => player.eligiblePositions.length ? player.eligiblePositions : FIELD_POSITIONS;
     function assignDefense(players,fixed=new Map()){
       const assignments=new Map(fixed),usedPlayers=new Set(fixed.keys()),usedFixedPositions=new Set(fixed.values());
       const required=players.length===9?FIELD_POSITIONS.filter(pos=>pos!=="Rover"):players.length>=10?[...FIELD_POSITIONS]:null;
       if(required){
         if([...usedFixedPositions].some(pos=>!required.includes(pos))||usedFixedPositions.size!==fixed.size)return null;
-        const ordered=shuffled(required.filter(pos=>!usedFixedPositions.has(pos))).sort((a,b)=>players.filter(p=>!usedPlayers.has(p.id)&&p.eligiblePositions.includes(a)).length-players.filter(p=>!usedPlayers.has(p.id)&&p.eligiblePositions.includes(b)).length);
+        const ordered=shuffled(required.filter(pos=>!usedFixedPositions.has(pos))).sort((a,b)=>players.filter(p=>!usedPlayers.has(p.id)&&playablePositions(p).includes(a)).length-players.filter(p=>!usedPlayers.has(p.id)&&playablePositions(p).includes(b)).length);
         function fillPosition(index){
           if(index===ordered.length)return true;
-          const position=ordered[index],candidates=shuffled(players.filter(p=>!usedPlayers.has(p.id)&&p.eligiblePositions.includes(position))).sort((a,b)=>a.eligiblePositions.length-b.eligiblePositions.length);
+          const position=ordered[index],candidates=shuffled(players.filter(p=>!usedPlayers.has(p.id)&&playablePositions(p).includes(position))).sort((a,b)=>playablePositions(a).length-playablePositions(b).length);
           for(const player of candidates){assignments.set(player.id,position);usedPlayers.add(player.id);if(fillPosition(index+1))return true;usedPlayers.delete(player.id);assignments.delete(player.id);}
           return false;
         }
         return fillPosition(0)?assignments:null;
       }
       if(usedFixedPositions.size!==fixed.size)return null;
-      const ordered=shuffled(players.filter(p=>!usedPlayers.has(p.id))).sort((a,b)=>a.eligiblePositions.length-b.eligiblePositions.length),usedPositions=new Set(usedFixedPositions);
+      const ordered=shuffled(players.filter(p=>!usedPlayers.has(p.id))).sort((a,b)=>playablePositions(a).length-playablePositions(b).length),usedPositions=new Set(usedFixedPositions);
       function fillPlayer(index){
         if(index===ordered.length)return true;
-        const player=ordered[index],choices=shuffled(player.eligiblePositions).filter(pos=>!usedPositions.has(pos));
+        const player=ordered[index],choices=shuffled(playablePositions(player)).filter(pos=>!usedPositions.has(pos));
         for(const position of choices){assignments.set(player.id,position);usedPositions.add(position);if(fillPlayer(index+1))return true;usedPositions.delete(position);assignments.delete(player.id);}
         return false;
       }
@@ -392,8 +395,6 @@
     }
     function autogenerateDefense(){
       const g=game();if(g.lineupLocked||!g.players.length)return;
-      const missing=g.players.filter(p=>!p.eligiblePositions.length);
-      if(missing.length)return showToast(`Choose playable positions for ${labelFor(missing[0])} first.`);
       const schedule=buildDefenseSchedule(g.players,g.innings);
       if(!schedule)return showToast("These position choices cannot fill a unique spot for every fielding player.");
       schedule.forEach((inning,index)=>g.players.forEach(player=>{if(!player.positions[index])player.positions[index]=inning.benched.has(player.id)?"Bench":inning.assignments.get(player.id);}));
