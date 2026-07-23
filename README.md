@@ -32,7 +32,7 @@ A dependency-free, phone-friendly kickball lineup and inning-by-inning fielding 
 - Clear all fielding positions without changing the kicking lineup
 - Browser save/load and JSON import/export for all teams and lineups
 - Print or save a landscape PDF containing only the lineup and fielding assignments
-- Share a read-only live lineup link with the team or a separate co-captain link for full two-way roster, lineup, game, current-inning, and kicking-progress edits (the owner’s sharing page must remain open)
+- Share a persistent read-only lineup link with the team or a separate co-captain link for full two-way roster, lineup, game, current-inning, and kicking-progress edits, even while the owner is offline
 - Password-protected, unlinked admin dashboard for viewing saved rosters, opening any saved lineup in the read-only shared layout, and reviewing anonymous visit activity, with local 72-hour sign-in persistence
 
 ## Configure the admin dashboard
@@ -48,4 +48,4 @@ The private page lives at `/admin.html` and is deliberately not linked from the 
 3. Under **Build and deployment**, select **Deploy from a branch**.
 4. Select the `main` branch and `/ (root)`, then save.
 
-No build step, framework, package manager, or application server is required. Live co-captain sharing loads PeerJS from jsDelivr and uses its public signaling service to connect both browsers directly.
+No build step, framework, package manager, or application server is required. Persistent sharing uses the configured Supabase project so shared links continue working when either captain closes the page.
