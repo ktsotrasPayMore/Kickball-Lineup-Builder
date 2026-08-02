@@ -39,6 +39,21 @@ create table if not exists public.shared_teams (
   updated_at timestamptz not null default now()
 );
 
+-- Shared links are public by design, so keep the anonymous storage surface
+-- bounded. Existing installations get the same retention column on re-run.
+alter table public.shared_teams
+  add column if not exists expires_at timestamptz not null default (now() + interval '90 days');
+alter table public.shared_teams add column if not exists creator_ip_hash bytea;
+alter table public.shared_teams drop constraint if exists shared_teams_payload_valid;
+alter table public.shared_teams add constraint shared_teams_payload_valid check (
+  payload ? 'version'
+  and payload ? 'team'
+  and jsonb_typeof(payload) = 'object'
+  and jsonb_typeof(payload -> 'version') = 'number'
+  and jsonb_typeof(payload -> 'team') = 'object'
+  and pg_column_size(payload) <= 65536
+) not valid;
+
 -- These tables preserve all-time counters when the recent-event list is
 -- cleared. The registry also determines whether a browser is truly new.
 create table if not exists public.visitor_totals (
@@ -102,13 +117,45 @@ create policy "admins can read visitor totals" on public.visitor_totals
 create index if not exists visitor_events_visited_at_idx on public.visitor_events (visited_at desc);
 create index if not exists roster_snapshots_updated_at_idx on public.roster_snapshots (updated_at desc);
 create index if not exists shared_teams_updated_at_idx on public.shared_teams (updated_at desc);
+create index if not exists shared_teams_expires_at_idx on public.shared_teams (expires_at);
 
 create or replace function public.create_shared_team(p_share_id uuid, p_edit_token text, p_view_token text, p_payload jsonb)
 returns void language plpgsql security definer set search_path = public, extensions as $$
+declare
+  request_headers jsonb := coalesce(nullif(current_setting('request.headers', true), '')::jsonb, '{}'::jsonb);
+  client_ip text;
+  client_ip_hash bytea;
 begin
-  if length(p_edit_token) < 32 or length(p_view_token) < 32 or p_payload is null then raise exception 'Invalid shared team'; end if;
-  insert into public.shared_teams (share_id, edit_token_hash, view_token_hash, payload)
-  values (p_share_id, digest(p_edit_token, 'sha256'), digest(p_view_token, 'sha256'), p_payload);
+  if p_edit_token is null
+    or p_view_token is null
+    or length(p_edit_token) not between 32 and 128
+    or length(p_view_token) not between 32 and 128
+    or p_payload is null
+    or jsonb_typeof(p_payload) is distinct from 'object'
+    or jsonb_typeof(p_payload -> 'version') is distinct from 'number'
+    or jsonb_typeof(p_payload -> 'team') is distinct from 'object'
+    or pg_column_size(p_payload) > 65536
+  then raise exception 'Invalid shared team'; end if;
+
+  -- Serialize anonymous creates so concurrent requests cannot bypass the cap.
+  perform pg_advisory_xact_lock(hashtextextended('shared_teams:create', 0));
+  delete from public.shared_teams where expires_at <= now();
+  client_ip := coalesce(
+    nullif(request_headers ->> 'cf-connecting-ip', ''),
+    nullif(btrim(split_part(request_headers ->> 'x-forwarded-for', ',', 1)), ''),
+    nullif(request_headers ->> 'x-real-ip', '')
+  );
+  if client_ip is null then raise exception 'Client address unavailable'; end if;
+  client_ip_hash := digest(client_ip, 'sha256');
+  if (select count(*) from public.shared_teams where creator_ip_hash = client_ip_hash) >= 25 then
+    raise exception 'Shared team limit reached';
+  end if;
+  if (select count(*) from public.shared_teams) >= 1000 then
+    raise exception 'Shared team capacity reached';
+  end if;
+
+  insert into public.shared_teams (share_id, edit_token_hash, view_token_hash, payload, expires_at, creator_ip_hash)
+  values (p_share_id, digest(p_edit_token, 'sha256'), digest(p_view_token, 'sha256'), p_payload, now() + interval '90 days', client_ip_hash);
 end; $$;
 
 create or replace function public.get_shared_team(p_share_id uuid, p_access_token text)
@@ -117,14 +164,27 @@ language sql security definer set search_path = public, extensions as $$
   select s.payload, s.updated_at, s.edit_token_hash = digest(p_access_token, 'sha256')
   from public.shared_teams s
   where s.share_id = p_share_id
+    and s.expires_at > now()
     and (s.edit_token_hash = digest(p_access_token, 'sha256') or s.view_token_hash = digest(p_access_token, 'sha256'));
 $$;
 
 create or replace function public.update_shared_team(p_share_id uuid, p_edit_token text, p_payload jsonb)
 returns void language plpgsql security definer set search_path = public, extensions as $$
 begin
-  update public.shared_teams set payload = p_payload, updated_at = now()
-  where share_id = p_share_id and edit_token_hash = digest(p_edit_token, 'sha256');
+  if p_edit_token is null
+    or length(p_edit_token) not between 32 and 128
+    or p_payload is null
+    or jsonb_typeof(p_payload) is distinct from 'object'
+    or jsonb_typeof(p_payload -> 'version') is distinct from 'number'
+    or jsonb_typeof(p_payload -> 'team') is distinct from 'object'
+    or pg_column_size(p_payload) > 65536
+  then raise exception 'Invalid shared team'; end if;
+
+  update public.shared_teams
+  set payload = p_payload, updated_at = now(), expires_at = now() + interval '90 days'
+  where share_id = p_share_id
+    and expires_at > now()
+    and edit_token_hash = digest(p_edit_token, 'sha256');
   if not found then raise exception 'Shared team not found'; end if;
 end; $$;
 

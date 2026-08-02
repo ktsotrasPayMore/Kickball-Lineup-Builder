@@ -50,7 +50,7 @@ This creates the reporting tables plus the persistent-sharing table:
 - `visitor_events` contains page visits, including the requesting IP address.
 - `roster_snapshots` contains the latest submitted roster/lineup data.
 - `admin_users` is the allowlist of people permitted to read the first two tables.
-- `shared_teams` stores token-protected shared rosters and lineups so captains do not need to be online at the same time.
+- `shared_teams` stores token-protected shared rosters and lineups so captains do not need to be online at the same time. Anonymous writes are limited to 64 KiB and 25 active shares per source address, the table is capped at 1,000 active shares, and inactive shares expire after 90 days; running the setup SQL applies these safeguards to existing installations.
 
 It also turns on Row Level Security. Visitors can submit reports but cannot read everybody else's data.
 
