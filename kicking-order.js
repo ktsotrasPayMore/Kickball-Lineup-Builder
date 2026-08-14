@@ -35,5 +35,32 @@
     return { next: fallback, nextGender: fallback?.gender || null };
   }
 
-  return { nextKicker };
+  function createLineupSnapshot(lineup) {
+    return {
+      innings: lineup.innings,
+      straightThru: Boolean(lineup.straightThru),
+      players: lineup.players.map(player => ({
+        ...player,
+        eligiblePositions: [...player.eligiblePositions],
+        positions: [...player.positions],
+      })),
+    };
+  }
+
+  function lineupMatchesSnapshot(lineup, snapshot) {
+    if (!snapshot) return true;
+    return JSON.stringify(createLineupSnapshot(lineup)) === JSON.stringify(snapshot);
+  }
+
+  function restoreLineupSnapshot(lineup, snapshot) {
+    if (!snapshot) return false;
+    const restored = createLineupSnapshot(snapshot);
+    lineup.innings = restored.innings;
+    lineup.straightThru = restored.straightThru;
+    lineup.players = restored.players;
+    lineup.currentInning = Math.min(lineup.currentInning, lineup.innings);
+    return true;
+  }
+
+  return { nextKicker, createLineupSnapshot, lineupMatchesSnapshot, restoreLineupSnapshot };
 });
