@@ -139,6 +139,13 @@
     .help-modal-body h3:first-child { margin-top:0; }
     .help-modal-body p,.help-modal-body ol,.help-modal-body ul { margin:6px 0; }
     .help-modal-body li+li { margin-top:5px; }
+    .defense-warning { width:min(760px,calc(100% - 28px)); }
+    .defense-warning .help-modal-head { background:#fff3cf; }
+    .defense-warning-summary { margin:0 0 16px; color:var(--muted); }
+    .defense-warning-list { display:grid; gap:10px; margin:0; padding:0; list-style:none; }
+    .defense-warning-list li { padding:12px 14px; border:1px solid var(--line); border-left:4px solid var(--gold); border-radius:9px; background:#fbfdff; }
+    .defense-warning-list strong { display:block; color:var(--navy); margin-bottom:3px; }
+    .modal-actions { position:sticky; bottom:0; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:9px; padding:15px 20px; border-top:1px solid var(--line); background:#fff; }
     .print-header { display:none; }
     body.shared-view .share-hidden { display:none!important; }
     body.shared-view .owner-only { display:none!important; }
@@ -258,6 +265,11 @@
       <h3>4. Save, print, back up, and share</h3>
       <ul><li><strong>Save</strong> stores all teams and lineups in this browser; <strong>Load</strong> restores that saved copy. Export a JSON backup to move everything to another device, and import it later.</li><li><strong>Print / PDF</strong> creates a landscape page containing the lineup and fielding assignments.</li><li><strong>Share Lineup</strong> creates a persistent read-only link. <strong>Share with Co-Captain</strong> creates a persistent editing link for the roster, lineup, inning, and kicking progress. Both links keep working after the creator closes the website.</li></ul>
     </div>
+  </dialog>
+  <dialog class="help-modal defense-warning" id="defenseWarningModal" aria-labelledby="defenseWarningTitle">
+    <div class="help-modal-head"><div><h2 id="defenseWarningTitle">Defense couldn’t be completed</h2><div class="section-note">Review the unfilled positions before continuing.</div></div><button class="icon-btn" id="closeDefenseWarningBtn" aria-label="Close defense warning">×</button></div>
+    <div class="help-modal-body"><p class="defense-warning-summary" id="defenseWarningSummary"></p><ul class="defense-warning-list" id="defenseWarningList"></ul></div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="cancelPartialDefenseBtn">Go Back</button><button class="btn btn-primary" id="savePartialDefenseBtn">Save Positions as Is</button></div>
   </dialog>
   <script src="admin-config.js"></script>
   <script src="kicking-order.js"></script>
@@ -402,11 +414,35 @@
       }
       return null;
     }
+    let pendingPartialDefense=null;
+    function buildPartialDefenseSchedule(players,innings){
+      const maleCount=players.filter(p=>p.gender==="Male").length,maleBenchCount=Math.max(0,maleCount-5),benchCount=Math.max(players.length-FIELD_POSITIONS.length,maleBenchCount),femaleBenchCount=Math.max(0,benchCount-maleBenchCount),schedule=[];
+      for(let inning=0;inning<innings;inning++){
+        const fixedBench=players.filter(p=>p.positions[inning]==="Bench"),fixedAssignments=new Map(players.filter(p=>FIELD_POSITIONS.includes(p.positions[inning])).map(p=>[p.id,p.positions[inning]])),fixedIds=new Set([...fixedBench.map(p=>p.id),...fixedAssignments.keys()]);
+        const choose=(gender,count)=>players.filter(p=>p.gender===gender&&!fixedIds.has(p.id)).sort((a,b)=>(b.isSub-a.isSub)).slice(0,Math.max(0,count));
+        const benchPlayers=[...fixedBench,...choose("Male",maleBenchCount-fixedBench.filter(p=>p.gender==="Male").length),...choose("Female",femaleBenchCount-fixedBench.filter(p=>p.gender==="Female").length)],benched=new Set(benchPlayers.map(p=>p.id)),active=players.filter(p=>!benched.has(p.id));
+        const assignments=new Map(fixedAssignments),fixedPlayerIds=new Set(fixedAssignments.keys()),positionOwner=new Map([...fixedAssignments].map(([id,position])=>[position,id])),playerById=new Map(active.map(p=>[p.id,p]));
+        function findPosition(player,seen){for(const position of playablePositions(player)){if(seen.has(position))continue;seen.add(position);const owner=positionOwner.get(position);if(!owner||(!fixedPlayerIds.has(owner)&&findPosition(playerById.get(owner),seen))){positionOwner.set(position,player.id);assignments.set(player.id,position);return true;}}return false;}
+        active.filter(p=>!assignments.has(p.id)).sort((a,b)=>playablePositions(a).length-playablePositions(b).length).forEach(player=>findPosition(player,new Set()));
+        const required=active.length===9?FIELD_POSITIONS.filter(pos=>pos!=="Rover"):active.length>=10?FIELD_POSITIONS:[];
+        const missing=required.length?required.filter(pos=>![...assignments.values()].includes(pos)):active.filter(p=>!assignments.has(p.id)).map(p=>`Open assignment (${labelFor(p)})`);
+        if(!missing.length&&(fixedBench.filter(p=>p.gender==="Male").length>maleBenchCount||fixedBench.filter(p=>p.gender==="Female").length>femaleBenchCount))missing.push("Bench assignments exceed the allowed defensive balance");
+        schedule.push({benched,assignments,missing});
+      }
+      return schedule;
+    }
+    function applyDefenseSchedule(schedule){const g=game();schedule.forEach((inning,index)=>g.players.forEach(player=>{if(!player.positions[index])player.positions[index]=inning.benched.has(player.id)?"Bench":inning.assignments.get(player.id)||"";}));saveData();render();}
+    function showDefenseWarning(schedule){
+      pendingPartialDefense=schedule;const failures=schedule.map((plan,index)=>({inning:index+1,missing:plan.missing})).filter(item=>item.missing.length),count=failures.reduce((total,item)=>total+item.missing.length,0);
+      $("defenseWarningSummary").textContent=`${count} position${count===1?"":"s"} could not be filled across ${failures.length} inning${failures.length===1?"":"s"}. You can go back to adjust player eligibility, or save every assignment the generator was able to make.`;
+      $("defenseWarningList").innerHTML=failures.map(item=>`<li><strong>Inning ${item.inning}</strong>${item.missing.map(esc).join(", ")}</li>`).join("");
+      document.body.classList.add("help-open");$("defenseWarningModal").showModal();
+    }
     function autogenerateDefense(){
       const g=game();if(g.lineupLocked||!g.players.length)return;
       const schedule=buildDefenseSchedule(g.players,g.innings);
-      if(!schedule)return showToast("These position choices cannot fill a unique spot for every fielding player.");
-      schedule.forEach((inning,index)=>g.players.forEach(player=>{if(!player.positions[index])player.positions[index]=inning.benched.has(player.id)?"Bench":inning.assignments.get(player.id);}));
+      if(!schedule)return showDefenseWarning(buildPartialDefenseSchedule(g.players,g.innings));
+      applyDefenseSchedule(schedule);
       const hasBench=schedule.some(inning=>inning.benched.size);saveData();render();showToast(hasBench?"Defense generated with gender-aware bench time.":"Defense generated — nobody is benched.");
     }
     function updateRosterPosition(index,position,checked){
@@ -485,6 +521,11 @@
     $("closeHelpBtn").addEventListener("click",()=>helpModal.close());
     helpModal.addEventListener("click",e=>{if(e.target===helpModal)helpModal.close();});
     helpModal.addEventListener("close",()=>document.body.classList.remove("help-open"));
+    const defenseWarningModal=$("defenseWarningModal"),closeDefenseWarning=()=>defenseWarningModal.close();
+    $("closeDefenseWarningBtn").addEventListener("click",closeDefenseWarning);$("cancelPartialDefenseBtn").addEventListener("click",closeDefenseWarning);
+    defenseWarningModal.addEventListener("click",e=>{if(e.target===defenseWarningModal)closeDefenseWarning();});
+    defenseWarningModal.addEventListener("close",()=>{pendingPartialDefense=null;document.body.classList.remove("help-open");});
+    $("savePartialDefenseBtn").addEventListener("click",()=>{if(!pendingPartialDefense)return;applyDefenseSchedule(pendingPartialDefense);pendingPartialDefense=null;defenseWarningModal.close();showToast("Partial defense saved. Unfilled positions remain blank.");});
     $("saveBtn").addEventListener("click",()=>{saveData();showToast("All teams and lineups saved.");});$("loadBtn").addEventListener("click",()=>{loadData();render();showToast("Saved teams loaded.");});$("clearPositionsBtn").addEventListener("click",clearPositions);$("clearBtn").addEventListener("click",clearLineup);$("printBtn").addEventListener("click",()=>{const title=`${team().name} - ${game().gameDate} - ${game().name}`;$("printTitle").textContent=`${team().name} — ${game().name}`;$("printMeta").textContent=[game().opponent&&`vs. ${game().opponent}`,game().gameDate].filter(Boolean).join(" • ");document.title=title;window.addEventListener("afterprint",()=>document.title="Kickball Game Day",{once:true});window.print();});$("shareLineupBtn").addEventListener("click",()=>copyShareLink("view"));$("shareBtn").addEventListener("click",()=>copyShareLink("edit"));$("exportBtn").addEventListener("click",exportJson);$("importFile").addEventListener("change",e=>{importJson(e.target.files[0]);e.target.value="";});
     if(!loadAdminLineup()&&!loadSharedLineup()){loadData();recordVisit();syncAdminSnapshot();resumeSharedTeam();}render();
   </script>
