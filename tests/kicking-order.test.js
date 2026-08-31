@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { createLineupSnapshot, lineupMatchesSnapshot, nextKicker, restoreLineupSnapshot } = require("../kicking-order.js");
+const { benchPriority, createLineupSnapshot, lineupMatchesSnapshot, nextKicker, restoreLineupSnapshot } = require("../kicking-order.js");
 
 const players = [
   { id: "f1", gender: "Female" },
@@ -30,6 +30,11 @@ assert.deepEqual(rotation(true, 4), ["f1", "f2", "m1", "m2"]);
 
 const oneGenderProgress = { lastKicker: { Female: null, Male: null }, lastGender: "Female", lastStraightKicker: null };
 assert.equal(nextKicker(players.filter(player => player.gender === "Female"), oneGenderProgress, false).next.id, "f1");
+
+assert.equal(benchPriority({ benchPreference: "normal" }, 2), 2);
+assert.equal(benchPriority({ benchPreference: "normal", isSub: true }, 2), 1.2);
+assert.equal(benchPriority({ benchPreference: "minimize" }, 2), 102);
+assert.equal(benchPriority({ benchPreference: "none" }, 0), Number.POSITIVE_INFINITY);
 
 const lineup = {
   innings: 2,

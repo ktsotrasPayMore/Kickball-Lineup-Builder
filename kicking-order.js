@@ -35,6 +35,13 @@
     return { next: fallback, nextGender: fallback?.gender || null };
   }
 
+  function benchPriority(player, timesBenched = 0) {
+    if (player.benchPreference === "none") return Number.POSITIVE_INFINITY;
+    const preferencePenalty = player.benchPreference === "minimize" ? 100 : 0;
+    const substitutePriority = player.isSub ? -0.8 : 0;
+    return timesBenched + preferencePenalty + substitutePriority;
+  }
+
   function createLineupSnapshot(lineup) {
     return {
       innings: lineup.innings,
@@ -62,5 +69,5 @@
     return true;
   }
 
-  return { nextKicker, createLineupSnapshot, lineupMatchesSnapshot, restoreLineupSnapshot };
+  return { benchPriority, nextKicker, createLineupSnapshot, lineupMatchesSnapshot, restoreLineupSnapshot };
 });
