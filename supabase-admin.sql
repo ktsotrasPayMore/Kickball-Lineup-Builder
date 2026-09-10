@@ -51,7 +51,7 @@ alter table public.shared_teams add constraint shared_teams_payload_valid check 
   and jsonb_typeof(payload) = 'object'
   and jsonb_typeof(payload -> 'version') = 'number'
   and jsonb_typeof(payload -> 'team') = 'object'
-  and pg_column_size(payload) <= 65536
+  and pg_column_size(payload) <= 262144
 ) not valid;
 
 -- These tables preserve all-time counters when the recent-event list is
@@ -134,7 +134,7 @@ begin
     or jsonb_typeof(p_payload) is distinct from 'object'
     or jsonb_typeof(p_payload -> 'version') is distinct from 'number'
     or jsonb_typeof(p_payload -> 'team') is distinct from 'object'
-    or pg_column_size(p_payload) > 65536
+    or pg_column_size(p_payload) > 262144
   then raise exception 'Invalid shared team'; end if;
 
   -- Serialize anonymous creates so concurrent requests cannot bypass the cap.
@@ -177,7 +177,7 @@ begin
     or jsonb_typeof(p_payload) is distinct from 'object'
     or jsonb_typeof(p_payload -> 'version') is distinct from 'number'
     or jsonb_typeof(p_payload -> 'team') is distinct from 'object'
-    or pg_column_size(p_payload) > 65536
+    or pg_column_size(p_payload) > 262144
   then raise exception 'Invalid shared team'; end if;
 
   update public.shared_teams
