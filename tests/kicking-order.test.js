@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { benchPriority, createLineupSnapshot, lineupMatchesSnapshot, nextKicker, restoreLineupSnapshot } = require("../kicking-order.js");
+const { benchPriority, createLineupSnapshot, lineupMatchesSnapshot, newerCollection, nextKicker, restoreLineupSnapshot } = require("../kicking-order.js");
 
 const players = [
   { id: "f1", gender: "Female" },
@@ -58,5 +58,11 @@ assert.deepEqual(lineup.players[0].positions, ["P", "Bench"]);
 // The snapshot must not share nested arrays with the editable lineup.
 lineup.players[0].positions[0] = "C";
 assert.equal(lockedSnapshot.players[0].positions[0], "P");
+
+const localSubs = [{ id: "new-sub", name: "New Sub" }];
+const remoteSubs = [];
+assert.equal(newerCollection(localSubs, remoteSubs, 200, 100), localSubs);
+assert.equal(newerCollection(localSubs, remoteSubs, 100, 200), remoteSubs);
+assert.equal(newerCollection(localSubs, remoteSubs, 100, 100), remoteSubs);
 
 console.log("Kicking order tests passed.");
