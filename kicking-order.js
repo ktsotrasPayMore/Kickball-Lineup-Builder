@@ -69,5 +69,9 @@
     return true;
   }
 
-  return { benchPriority, nextKicker, createLineupSnapshot, lineupMatchesSnapshot, restoreLineupSnapshot };
+  function newerCollection(localItems, remoteItems, localUpdatedAt, remoteUpdatedAt) {
+    return Number(localUpdatedAt || 0) > Number(remoteUpdatedAt || 0) ? localItems : remoteItems;
+  }
+
+  return { benchPriority, nextKicker, createLineupSnapshot, lineupMatchesSnapshot, newerCollection, restoreLineupSnapshot };
 });
