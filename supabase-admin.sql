@@ -188,12 +188,34 @@ begin
   if not found then raise exception 'Shared team not found'; end if;
 end; $$;
 
+-- Editors may rotate the viewer credential without learning or exposing the
+-- edit credential. This also lets co-captains create a safe player-facing link
+-- when they opened an older editing URL that did not include its viewer token.
+create or replace function public.update_shared_view_token(p_share_id uuid, p_edit_token text, p_view_token text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if p_edit_token is null
+    or p_view_token is null
+    or length(p_edit_token) not between 32 and 128
+    or length(p_view_token) not between 32 and 128
+  then raise exception 'Invalid shared team'; end if;
+
+  update public.shared_teams
+  set view_token_hash = digest(p_view_token, 'sha256'), updated_at = now(), expires_at = now() + interval '90 days'
+  where share_id = p_share_id
+    and expires_at > now()
+    and edit_token_hash = digest(p_edit_token, 'sha256');
+  if not found then raise exception 'Shared team not found'; end if;
+end; $$;
+
 revoke all on function public.create_shared_team(uuid, text, text, jsonb) from public;
 revoke all on function public.get_shared_team(uuid, text) from public;
 revoke all on function public.update_shared_team(uuid, text, jsonb) from public;
+revoke all on function public.update_shared_view_token(uuid, text, text) from public;
 grant execute on function public.create_shared_team(uuid, text, text, jsonb) to anon;
 grant execute on function public.get_shared_team(uuid, text) to anon;
 grant execute on function public.update_shared_team(uuid, text, jsonb) to anon;
+grant execute on function public.update_shared_view_token(uuid, text, text) to anon;
 
 -- Record visits through a database function so the IP comes from Supabase's
 -- trusted request headers rather than from user-controlled browser data.
