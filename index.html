@@ -29,6 +29,8 @@
     input:focus,select:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(23,105,170,.13); }
     .actions { display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
     .toolbar>.actions { margin-left:auto; }
+    .wake-toggle[aria-pressed="true"] { background:var(--green2); color:var(--green); border-color:#a9d8bd; }
+    .wake-toggle .wake-status { font-size:.72rem; text-transform:uppercase; letter-spacing:.045em; }
     .sub-actions select { width:auto; }
     .team-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:end; }
     .lineup-controls { display:grid; grid-template-columns:minmax(150px,1fr) minmax(150px,1fr) 92px auto auto; gap:8px; align-items:end; flex:1 1 680px; }
@@ -276,6 +278,7 @@
     <div class="app-shell">
       <section class="toolbar no-print" aria-label="Lineup actions">
         <button class="btn btn-ghost" id="helpBtn">How to Use</button>
+        <button class="btn btn-ghost wake-toggle" id="wakeLockBtn" type="button" aria-pressed="false" disabled><span aria-hidden="true">☀</span> Keep Screen Awake <span class="wake-status">Off</span></button>
         <div class="actions"><button class="btn btn-secondary owner-only" id="saveBtn">Save</button><button class="btn btn-ghost owner-only" id="loadBtn">Load</button><button class="btn btn-primary" id="printBtn">Print / PDF</button><button class="btn btn-secondary edit-only" id="shareLineupBtn">Share Read-Only Lineup</button><button class="btn btn-primary owner-only" id="shareBtn">Share with Co-Captain</button></div>
       </section>
       <div class="content">
@@ -301,7 +304,7 @@
         <section class="section-card no-print share-hidden"><div class="section-head"><div><h2 class="section-title">Lineup Backup</h2><div class="section-note">Download your lineup or transfer it to another device.</div></div><div class="actions"><button class="btn btn-secondary" id="exportBtn">Export JSON</button><label class="btn btn-ghost" for="importFile" style="text-transform:none;letter-spacing:0;font-size:inherit">Import JSON</label><input id="importFile" type="file" accept="application/json,.json" hidden></div></div></section>
       </div>
     </div>
-    <p class="footer-note"><span class="version">Version 2.6.5</span><span class="version">Created by Kevin Tsotras</span></p>
+    <p class="footer-note"><span class="version">Version 2.7.0</span><span class="version">Created by Kevin Tsotras</span></p>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <dialog class="help-modal" id="helpModal" aria-labelledby="helpTitle">
@@ -317,7 +320,7 @@
       <h3>4. Lock and run the game</h3>
       <ol><li>Add at least five players and give every player a position or Bench in every inning. Then choose <strong>Lock Lineup</strong> to prevent accidental game-day edits.</li><li>Choose <strong>Start Game</strong> to begin the first-inning timer. The tracker shows the current kicker, who is on deck, and who is in the hole.</li><li>After each kick, choose <strong>Next Kicker</strong>. Use <strong>Current inning</strong> when the inning changes; the app saves the old inning’s time, starts the selected inning’s timer, and brings that inning’s column into view.</li><li>You may switch teams or games without resetting a locked game’s inning, timer, or kicking progress. Choose <strong>Unlock Lineup</strong> if corrections are needed; <strong>Revert to Last Locked Lineup</strong> restores the last locked player order, positions, inning count, and kicking mode after an unlock.</li><li>During inning 9, choose <strong>End Game</strong> to save the final game time and number of kicks. The finished lineup stays read-only, but the other controls remain available: you can edit the team, delete the finished game, choose <strong>+ Add Game</strong> for a fresh game, or use <strong>Copy Lineup to Another Game</strong> to preserve all of its assignments on any date.</li></ol>
       <h3>5. Save, share, print, and transfer</h3>
-      <ul><li>Changes save automatically. <strong>Save</strong> also stores the latest teams and lineups in this browser, while <strong>Load</strong> restores the browser’s saved copy.</li><li><strong>Share Read-Only Lineup</strong> creates a persistent player link and is available to both the owner and co-captains. Only the owner can use <strong>Share with Co-Captain</strong> to grant editing access. Co-captain changes sync even while the owner is offline.</li><li><strong>Print / PDF</strong> creates a clean landscape lineup with the fielding assignments.</li><li><strong>Export JSON</strong> downloads a backup of every team and game. Use <strong>Import JSON</strong> on this or another device to restore that backup.</li></ul>
+      <ul><li>After choosing <strong>Start Game</strong>, turn on <strong>Keep Screen Awake</strong> to prevent the phone from sleeping while this page is visible. The toggle turns off automatically when the game ends or you leave the active game.</li><li>Changes save automatically. <strong>Save</strong> also stores the latest teams and lineups in this browser, while <strong>Load</strong> restores the browser’s saved copy.</li><li><strong>Share Read-Only Lineup</strong> creates a persistent player link and is available to both the owner and co-captains. Only the owner can use <strong>Share with Co-Captain</strong> to grant editing access. Co-captain changes sync even while the owner is offline.</li><li><strong>Print / PDF</strong> creates a clean landscape lineup with the fielding assignments.</li><li><strong>Export JSON</strong> downloads a backup of every team and game. Use <strong>Import JSON</strong> on this or another device to restore that backup.</li></ul>
     </div>
   </dialog>
   <dialog class="help-modal defense-warning" id="defenseWarningModal" aria-labelledby="defenseWarningTitle">
@@ -334,6 +337,7 @@
   </dialog>
   <script src="admin-config.js"></script>
   <script src="kicking-order.js"></script>
+  <script src="wake-lock.js"></script>
   <script>
     const FIELD_POSITIONS = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "Rover"];
     const POSITIONS = ["", ...FIELD_POSITIONS, "Bench"];
@@ -422,6 +426,7 @@
     }
     function render(){
       const g=game(),displayLocked=g.lineupLocked||g.gameEnded||readOnlyView,currentInning=g.currentInning-1;syncInputs();$("lineupTable").classList.toggle("is-locked",displayLocked);
+      const gameInProgress=g.gameStarted&&!g.gameEnded;wakeLockBtn.disabled=!gameInProgress;if(!gameInProgress&&wakeController.enabled)wakeController.disable();
       refs.head.innerHTML=`<tr><th class="player-cell">Player</th>${Array.from({length:g.innings},(_,inn)=>`<th class="${inn===currentInning?"current-inning":""}">Inn ${inn+1}</th>`).join("")}${displayLocked?"":'<th class="no-print">Game actions</th>'}</tr>`;
       if(!g.players.length)refs.body.innerHTML=`<tr><td colspan="${g.innings+(displayLocked?1:2)}" class="empty-state">No players yet. Add someone from this team’s roster or substitute list.</td></tr>`;
       else refs.body.innerHTML=g.players.map((p,i)=>{const benchCount=p.positions.filter(pos=>pos==="Bench").length;return `<tr><td class="player-cell"><div class="player-wrap"><span class="order">${i+1}</span><span class="player-details"><span class="locked-value">${esc(labelFor(p))}</span>${displayLocked?"":`<span class="bench-count">Benched ${benchCount} time${benchCount===1?"":"s"}</span>`}</span>${p.isSub?' <span class="sub-badge">Sub</span>':""}</div></td>${p.positions.map((pos,inn)=>`<td class="position-cell ${inn===currentInning?"current-inning":""}">${displayLocked?`<span class="locked-value">${esc(pos||"—")}</span>`:`<select data-inning="${inn}" data-index="${i}" aria-label="${esc(labelFor(p))}, inning ${inn+1} position">${positionOptions(i,inn,pos)}</select>`}</td>`).join("")}${displayLocked?"":`<td class="controls-cell no-print"><button class="icon-btn" data-action="up" data-index="${i}" aria-label="Move up">↑</button> <button class="icon-btn" data-action="down" data-index="${i}" aria-label="Move down">↓</button>${editingTeam?"":` <button class="icon-btn delete" data-action="delete" data-index="${i}" aria-label="Remove">×</button>`}</td>`}</tr>`;}).join("");
@@ -591,6 +596,9 @@
     function loadSharedLineup(){const match=/^#(edit|view)=(.+)$/.exec(location.hash);if(!match)return false;const mode=match[1],[id,token,viewToken]=decodeURIComponent(match[2]).split(".");if(!id||!token)return false;readOnlyView=mode==="view";let draft;try{draft=JSON.parse(localStorage.getItem(sharedDraftKey(id))||"null");}catch{}const placeholder=!readOnlyView&&draft?.team?normalizeTeam(draft.team):normalizeTeam({name:"Connecting to shared team…",lineups:[newLineup(1)]});state.teams=[placeholder];state.activeTeamId=placeholder.id;sharedView=true;sharedSession={id,token,viewToken:readOnlyView?token:viewToken||null,teamId:placeholder.id};document.body.classList.add("shared-view");if(readOnlyView)document.body.classList.add("read-only-view");pollSharedLineup().then(()=>{startSharedPolling();if(draft?.team&&!readOnlyView)queueSharedSave();});return true;}
     function apply(data){if(data?.teams?.length){state.teams=data.teams.map(normalizeTeam);state.activeTeamId=state.teams.some(t=>t.id===data.activeTeamId)?data.activeTeamId:state.teams[0].id;}else{const t=normalizeTeam({name:data.teamName||"Imported Team",lineups:[data]});state.teams=[t];state.activeTeamId=t.id;}saveData();render();}
     let toastTimer;function showToast(msg){refs.toast.textContent=msg;refs.toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>refs.toast.classList.remove("show"),2200);}
+    const wakeLockBtn=$("wakeLockBtn"),wakeStatus=wakeLockBtn.querySelector(".wake-status");
+    const wakeController=new WakeLockController({navigator,document,onChange:({enabled})=>{wakeLockBtn.setAttribute("aria-pressed",String(enabled));wakeStatus.textContent=enabled?"On":"Off";wakeLockBtn.title=enabled?"Screen wake protection is on.":"Prevent the screen from sleeping during the game.";}});
+    wakeLockBtn.addEventListener("click",async()=>{if(!game().gameStarted||game().gameEnded)return;const enabled=await wakeController.toggle();showToast(enabled?"Screen will stay awake while this page is visible.":wakeController.lastStartFailed?"This browser blocked wake protection.":"Screen can sleep normally.");});
     function exportJson(){const blob=new Blob([JSON.stringify(payload(),null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="kickball-teams.json";a.click();URL.revokeObjectURL(a.href);}
     function importJson(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{apply(JSON.parse(reader.result));showToast("Teams and lineups imported.");}catch{showToast("That is not a valid backup.");}};reader.readAsText(file);}
     refs.body.addEventListener("input",e=>{const input=e.target.closest('input[data-field="name"]');if(!input)return;game().players[+input.dataset.index].name=input.value;saveData();renderKickingProgress();});
