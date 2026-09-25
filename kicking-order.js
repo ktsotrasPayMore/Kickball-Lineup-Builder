@@ -35,6 +35,26 @@
     return { next: fallback, nextGender: fallback?.gender || null };
   }
 
+  function kickerProgressAfter(players, kicks, straightThru) {
+    const progress = {
+      lastKicker: { Female: null, Male: null },
+      lastGender: null,
+      lastStraightKicker: null,
+    };
+
+    for (let index = 0; index < Math.max(0, kicks); index += 1) {
+      const { next } = nextKicker(players, progress, straightThru);
+      if (!next) break;
+      if (straightThru) progress.lastStraightKicker = next.id;
+      else {
+        progress.lastKicker[next.gender] = next.id;
+        progress.lastGender = next.gender;
+      }
+    }
+
+    return progress;
+  }
+
   function benchPriority(player, timesBenched = 0) {
     if (player.benchPreference === "none") return Number.POSITIVE_INFINITY;
     const preferencePenalty = player.benchPreference === "minimize" ? 100 : 0;
@@ -73,5 +93,5 @@
     return Number(localUpdatedAt || 0) > Number(remoteUpdatedAt || 0) ? localItems : remoteItems;
   }
 
-  return { benchPriority, nextKicker, createLineupSnapshot, lineupMatchesSnapshot, newerCollection, restoreLineupSnapshot };
+  return { benchPriority, kickerProgressAfter, nextKicker, createLineupSnapshot, lineupMatchesSnapshot, newerCollection, restoreLineupSnapshot };
 });
