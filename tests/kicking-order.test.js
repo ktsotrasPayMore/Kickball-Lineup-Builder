@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { benchPriority, createLineupSnapshot, lineupMatchesSnapshot, newerCollection, nextKicker, restoreLineupSnapshot } = require("../kicking-order.js");
+const { benchPriority, createLineupSnapshot, kickerProgressAfter, lineupMatchesSnapshot, newerCollection, nextKicker, restoreLineupSnapshot } = require("../kicking-order.js");
 
 const players = [
   { id: "f1", gender: "Female" },
@@ -27,6 +27,22 @@ function rotation(straightThru, count) {
 
 assert.deepEqual(rotation(false, 8), ["f1", "m1", "f2", "m2", "f1", "m1", "f2", "m2"]);
 assert.deepEqual(rotation(true, 4), ["f1", "f2", "m1", "m2"]);
+
+assert.deepEqual(kickerProgressAfter(players, 3, false), {
+  lastKicker: { Female: "f2", Male: "m1" },
+  lastGender: "Female",
+  lastStraightKicker: null,
+});
+assert.deepEqual(kickerProgressAfter(players, 2, true), {
+  lastKicker: { Female: null, Male: null },
+  lastGender: null,
+  lastStraightKicker: "f2",
+});
+assert.deepEqual(kickerProgressAfter(players, 0, false), {
+  lastKicker: { Female: null, Male: null },
+  lastGender: null,
+  lastStraightKicker: null,
+});
 
 const oneGenderProgress = { lastKicker: { Female: null, Male: null }, lastGender: "Female", lastStraightKicker: null };
 assert.equal(nextKicker(players.filter(player => player.gender === "Female"), oneGenderProgress, false).next.id, "f1");
