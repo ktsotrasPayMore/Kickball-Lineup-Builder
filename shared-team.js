@@ -21,5 +21,25 @@
     return { lineups, deletedAt };
   }
 
-  return { mergeLineups };
+  function isBlankLineup(lineup) {
+    return !lineup.players?.length &&
+      !String(lineup.opponent || "").trim() &&
+      !lineup.lineupLocked &&
+      !lineup.lastLockedLineup &&
+      !lineup.gameStarted &&
+      !lineup.gameEnded &&
+      !lineup.totalKicks &&
+      !(lineup.inningElapsedSeconds || []).some(seconds => Number(seconds) > 0);
+  }
+
+  function renumberLineups(lineups, date, updatedAt = Date.now()) {
+    lineups.filter(lineup => lineup.gameDate === date).forEach((lineup, index) => {
+      const name = `Game ${index + 1}`;
+      if (lineup.name === name) return;
+      lineup.name = name;
+      lineup.updatedAt = Math.max(Number(lineup.updatedAt) || 0, updatedAt);
+    });
+  }
+
+  return { isBlankLineup, mergeLineups, renumberLineups };
 });
