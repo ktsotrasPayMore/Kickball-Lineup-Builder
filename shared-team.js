@@ -24,6 +24,7 @@
   function isBlankLineup(lineup) {
     return !lineup.players?.length &&
       !String(lineup.opponent || "").trim() &&
+      !String(lineup.gameLocation || "").trim() &&
       !lineup.lineupLocked &&
       !lineup.lastLockedLineup &&
       !lineup.gameStarted &&

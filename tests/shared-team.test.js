@@ -38,6 +38,7 @@ assert.equal(moveLineupToDate(datedGames, movedGame, "2026-09-26", 40), false);
 assert.equal(isBlankLineup({ players: [], inningElapsedSeconds: Array(9).fill(0) }), true);
 assert.equal(isBlankLineup({ players: [{ id: "player" }], inningElapsedSeconds: [] }), false);
 assert.equal(isBlankLineup({ players: [], opponent: "Visitors", inningElapsedSeconds: [] }), false);
+assert.equal(isBlankLineup({ players: [], gameLocation: "Home", inningElapsedSeconds: [] }), false);
 assert.equal(isBlankLineup({ players: [], gameStarted: true, inningElapsedSeconds: [] }), false);
 
 const sharedGames = [{ id: "wrong-date" }, { id: "today" }];
