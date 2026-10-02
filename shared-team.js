@@ -38,7 +38,7 @@
       const name = `Game ${index + 1}`;
       if (lineup.name === name) return;
       lineup.name = name;
-      lineup.updatedAt = Math.max(Number(lineup.updatedAt) || 0, updatedAt);
+      lineup.updatedAt = Math.max((Number(lineup.updatedAt) || 0) + 1, updatedAt);
     });
   }
 
@@ -52,7 +52,7 @@
       lineups.splice(lastTargetIndex >= 0 ? lastTargetIndex + 1 : lineups.length, 0, lineup);
     }
     lineup.gameDate = date;
-    lineup.updatedAt = Math.max(Number(lineup.updatedAt) || 0, updatedAt);
+    lineup.updatedAt = Math.max((Number(lineup.updatedAt) || 0) + 1, updatedAt);
     renumberLineups(lineups, previousDate, updatedAt);
     renumberLineups(lineups, date, updatedAt);
     return true;

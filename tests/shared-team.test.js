@@ -35,6 +35,11 @@ assert.deepEqual(datedGames.map(game => game.name), ["Game 1", "Game 1", "Game 2
 assert.equal(movedGame.updatedAt, 30);
 assert.equal(moveLineupToDate(datedGames, movedGame, "2026-09-26", 40), false);
 
+const futureDatedGame = { id: "future", name: "Game 1", gameDate: "2026-10-02", updatedAt: 5000 };
+assert.equal(moveLineupToDate([futureDatedGame], futureDatedGame, "2026-10-07", 1000), true);
+assert.equal(futureDatedGame.gameDate, "2026-10-07");
+assert.equal(futureDatedGame.updatedAt, 5001);
+
 assert.equal(isBlankLineup({ players: [], inningElapsedSeconds: Array(9).fill(0) }), true);
 assert.equal(isBlankLineup({ players: [{ id: "player" }], inningElapsedSeconds: [] }), false);
 assert.equal(isBlankLineup({ players: [], opponent: "Visitors", inningElapsedSeconds: [] }), false);
