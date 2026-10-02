@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { isBlankLineup, mergeLineups, renumberLineups } = require("../shared-team.js");
+const { isBlankLineup, mergeLineups, moveLineupToDate, renumberLineups, sharedLineupId } = require("../shared-team.js");
 
 const oldGame = { id: "old", updatedAt: 100 };
 const currentGame = { id: "current", updatedAt: 300 };
@@ -28,9 +28,22 @@ assert.deepEqual(datedGames.map(game => game.name), ["Game 1", "Game 2", "Game 1
 assert.equal(datedGames[1].updatedAt, 20);
 assert.equal(datedGames[2].updatedAt, 10);
 
+const movedGame = datedGames[1];
+assert.equal(moveLineupToDate(datedGames, movedGame, "2026-09-26", 30), true);
+assert.equal(movedGame.gameDate, "2026-09-26");
+assert.deepEqual(datedGames.map(game => game.name), ["Game 1", "Game 1", "Game 2"]);
+assert.equal(movedGame.updatedAt, 30);
+assert.equal(moveLineupToDate(datedGames, movedGame, "2026-09-26", 40), false);
+
 assert.equal(isBlankLineup({ players: [], inningElapsedSeconds: Array(9).fill(0) }), true);
 assert.equal(isBlankLineup({ players: [{ id: "player" }], inningElapsedSeconds: [] }), false);
 assert.equal(isBlankLineup({ players: [], opponent: "Visitors", inningElapsedSeconds: [] }), false);
 assert.equal(isBlankLineup({ players: [], gameStarted: true, inningElapsedSeconds: [] }), false);
+
+const sharedGames = [{ id: "wrong-date" }, { id: "today" }];
+assert.equal(sharedLineupId(sharedGames, "wrong-date", "today"), "wrong-date");
+assert.equal(sharedLineupId(sharedGames, "missing", "today"), "today");
+assert.equal(sharedLineupId(sharedGames, null, "missing"), "wrong-date");
+assert.equal(sharedLineupId([], "wrong-date", "today"), null);
 
 console.log("Shared team tests passed.");

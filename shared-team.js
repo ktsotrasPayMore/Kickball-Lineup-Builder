@@ -41,5 +41,27 @@
     });
   }
 
-  return { isBlankLineup, mergeLineups, renumberLineups };
+  function moveLineupToDate(lineups, lineup, date, updatedAt = Date.now()) {
+    if (!lineup || !date || lineup.gameDate === date) return false;
+    const previousDate = lineup.gameDate;
+    const previousIndex = lineups.indexOf(lineup);
+    if (previousIndex >= 0) {
+      lineups.splice(previousIndex, 1);
+      const lastTargetIndex = lineups.reduce((last, candidate, index) => candidate.gameDate === date ? index : last, -1);
+      lineups.splice(lastTargetIndex >= 0 ? lastTargetIndex + 1 : lineups.length, 0, lineup);
+    }
+    lineup.gameDate = date;
+    lineup.updatedAt = Math.max(Number(lineup.updatedAt) || 0, updatedAt);
+    renumberLineups(lineups, previousDate, updatedAt);
+    renumberLineups(lineups, date, updatedAt);
+    return true;
+  }
+
+  function sharedLineupId(lineups, requestedLineupId, activeLineupId) {
+    if (lineups.some(lineup => lineup.id === requestedLineupId)) return requestedLineupId;
+    if (lineups.some(lineup => lineup.id === activeLineupId)) return activeLineupId;
+    return lineups[0]?.id || null;
+  }
+
+  return { isBlankLineup, mergeLineups, moveLineupToDate, renumberLineups, sharedLineupId };
 });
